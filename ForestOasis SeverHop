@@ -1,5 +1,5 @@
 -- ========================================================
--- 🌿 FOREST OASIS • ULTIMATE SERVER HOP (FOREST STYLE) 🌿
+-- 🌿 FOREST OASIS • ULTIMATE LOW-PLAYER SERVER HOP 🌿
 -- ========================================================
 -- Author: HuyKhuaLong2
 -- ========================================================
@@ -49,14 +49,14 @@ MainShadow.Parent = MainFrame
 
 task.spawn(function()
     local hue = 0
-    while true do
+    while ScreenGui and ScreenGui.Parent do
         hue = (hue + 1.5) % 360
         MainShadow.Color = Color3.fromHSV(hue / 360, 0.75, 0.9)
         task.wait(0.03)
     end
 end)
 
--- Hiệu ứng lá rụng / mưa sao băng xanh
+-- Hiệu ứng lá rụng / mưa sao băng xanh nhẹ nhàng
 task.spawn(function()
     while ScreenGui and ScreenGui.Parent do
         local star = Instance.new("Frame")
@@ -140,7 +140,7 @@ Title.BackgroundTransparency = 1
 Title.Text = "🌿 FOREST OASIS HUB"
 Title.TextColor3 = Color3.fromRGB(140, 255, 180)
 Title.TextSize = 16
-Title.Font = Enum.Font.SpecialElite -- Kiểu chữ mộc mạc, đậm chất hoang dã/rừng rậm
+Title.Font = Enum.Font.SpecialElite
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.ZIndex = 3
 Title.Parent = TopBar
@@ -149,7 +149,7 @@ local SubTitle = Instance.new("TextLabel")
 SubTitle.Size = UDim2.new(0, 260, 0, 16)
 SubTitle.Position = UDim2.new(0, 72, 0, 32)
 SubTitle.BackgroundTransparency = 1
-SubTitle.Text = "✨ ULTIMATE 1-PLAYER SERVER HOPPER"
+SubTitle.Text = "✨ LOW-PLAYER SERVER HOP"
 SubTitle.TextColor3 = Color3.fromRGB(140, 200, 165)
 SubTitle.TextSize = 9.5
 SubTitle.Font = Enum.Font.GothamBold
@@ -225,9 +225,9 @@ local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(1, -30, 0, 24)
 StatusLabel.Position = UDim2.new(0, 30, 0, 8)
 StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "Status: Ready to hop empty server"
+StatusLabel.Text = "Status: Ready to find least populated server"
 StatusLabel.TextColor3 = Color3.fromRGB(190, 240, 210)
-StatusLabel.TextSize = 12
+StatusLabel.TextSize = 11.5
 StatusLabel.Font = Enum.Font.GothamSemibold
 StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 StatusLabel.ZIndex = 3
@@ -239,8 +239,8 @@ HopButton.Size = UDim2.new(0.94, 0, 0, 54)
 HopButton.Position = UDim2.new(0.03, 0, 0, 42)
 HopButton.BackgroundColor3 = Color3.fromRGB(15, 90, 50)
 HopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-HopButton.Text = "⚡ START SERVER HOP"
-HopButton.TextSize = 14.5
+HopButton.Text = "⚡ START FIND SEVER HOP"
+HopButton.TextSize = 13.5
 HopButton.Font = Enum.Font.GothamBlack
 HopButton.ZIndex = 3
 HopButton.Parent = InnerCard
@@ -262,9 +262,9 @@ local DecorHint = Instance.new("TextLabel")
 DecorHint.Size = UDim2.new(1, 0, 0, 18)
 DecorHint.Position = UDim2.new(0, 0, 0, 105)
 DecorHint.BackgroundTransparency = 1
-DecorHint.Text = "🛡️ Safe & Fast System • Auto Bypass Queue"
+DecorHint.Text = "🛡️ Safe & Fast System • Prioritizing Fewest Players"
 DecorHint.TextColor3 = Color3.fromRGB(100, 150, 120)
-DecorHint.TextSize = 10
+DecorHint.TextSize = 9.5
 DecorHint.Font = Enum.Font.GothamMedium
 DecorHint.ZIndex = 3
 DecorHint.Parent = InnerCard
@@ -336,7 +336,7 @@ DiscordBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ========================================================
--- 5. LOGIC TÌM SERVER (1 PLAYER HOPPER)
+-- 5. LOGIC TÌM SERVER ÍT NGƯỜI NHẤT (LOW-PLAYER SERVER HOP)
 -- ========================================================
 local function NotifyVIP(titleText, descText)
     pcall(function()
@@ -350,17 +350,17 @@ end
 
 local isScanning = false
 
-local function UltimateOnePlayerHop()
+local function LowestPlayerHop()
     if isScanning then return end
     isScanning = true
     
-    HopButton.Text = "⏳ SCANNING SYSTEMS..."
+    HopButton.Text = "⏳ SCANNING LEAST POPULATED..."
     HopButton.BackgroundColor3 = Color3.fromRGB(20, 50, 32)
-    StatusLabel.Text = "Scanning for empty 1-player server..."
-    NotifyVIP("Server Hopper", "⚡ Scanning system for an empty 1-player server...")
+    StatusLabel.Text = "Scanning for server with fewest players..."
+    NotifyVIP("Server Hop", "⚡ Scanning system for the least populated server...")
     
     local cursor = ""
-    local validServers = {}
+    local allServers = {}
     
     repeat
         local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
@@ -374,35 +374,40 @@ local function UltimateOnePlayerHop()
         
         if success and result and result.data then
             for _, server in ipairs(result.data) do
-                if server.id ~= game.JobId and server.playing == 1 and server.maxPlayers and server.playing < server.maxPlayers then
-                    table.insert(validServers, server)
+                if server.id ~= game.JobId and server.playing and server.maxPlayers and server.playing < server.maxPlayers then
+                    table.insert(allServers, server)
                 end
             end
             cursor = result.nextPageCursor
         else
             break
         end
-    until not cursor or cursor == "" or #validServers >= 10
+    until not cursor or cursor == "" or #allServers >= 200
 
-    if #validServers > 0 then
-        local targetServer = validServers[math.random(1, #validServers)]
-        StatusLabel.Text = "🎯 Found! Teleporting now..."
-        NotifyVIP("Success! 🎯", "🚀 Found a 1-player server. Teleporting you in...")
+    if #allServers > 0 then
+        table.sort(allServers, function(a, b)
+            return a.playing < b.playing
+        end)
+
+        local targetServer = allServers[1]
+        
+        StatusLabel.Text = "🎯 Found server with " .. targetServer.playing .. " player(s)! Teleporting..."
+        NotifyVIP("Success! 🎯", "🚀 Found a server with only " .. targetServer.playing .. " player(s). Teleporting...")
         
         pcall(function()
             TeleportService:TeleportToPlaceInstance(PlaceId, targetServer.id, LocalPlayer)
         end)
     else
-        StatusLabel.Text = "⏳ Not found, scanning next page..."
-        NotifyVIP("Searching...", "⏳ No 1-player server found yet, scanning next page...")
+        StatusLabel.Text = "⏳ No other servers found, retrying..."
+        NotifyVIP("Searching...", "⏳ No alternative server found yet, retrying scan...")
         task.wait(1.5)
         isScanning = false
-        UltimateOnePlayerHop()
+        LowestPlayerHop()
     end
 end
 
 HopButton.MouseButton1Click:Connect(function()
     if not isScanning then
-        UltimateOnePlayerHop()
+        LowestPlayerHop()
     end
 end)
