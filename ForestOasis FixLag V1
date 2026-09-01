@@ -1,0 +1,164 @@
+-- ==========================================
+-- 🚀 FOREST OASIS FIXLAG & ANTI-STRETCH + ANTI-RED/YELLOW FLASH
+-- ==========================================
+
+-- 1. Giảm cấu hình đồ họa game tối đa
+pcall(function()
+    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+    settings().Rendering.MeshPartDetailLevel = Enum.MeshPartDetailLevel.Level01
+    UserSettings():GetService("UserGameSettings").SavedQualityLevel = Enum.SavedQualityLevel.Level1
+end)
+
+-- 2. Tinh chỉnh ánh sáng vừa phải và khóa góc nhìn chống kéo giãn (FOV Lock)
+pcall(function()
+    local Lighting = game:GetService("Lighting")
+    local Camera = workspace.CurrentCamera
+    
+    Lighting.GlobalShadows = false
+    Lighting.ShadowSoftness = 0
+    Lighting.Brightness = 1.2
+    Lighting.ClockTime = 18
+    Lighting.FogEnd = 9e9
+    
+    for _, v in ipairs(Lighting:GetChildren()) do
+        if v:IsA("PostEffect") or v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("Atmosphere") then
+            v:Destroy()
+        end
+    end
+
+    local cc = Instance.new("ColorCorrectionEffect")
+    cc.Name = "PerfectBrightnessCC"
+    cc.Brightness = -0.05
+    cc.Saturation = -0.15
+    cc.Parent = Lighting
+
+    -- Khóa cứng FOV của Camera chống bị bóp méo, kéo giãn màn hình khi làm nhiệm vụ
+    if Camera then
+        Camera.FieldOfView = 70
+        Camera.Changed:Connect(function(property)
+            if property == "FieldOfView" and Camera.FieldOfView ~= 70 then
+                Camera.FieldOfView = 70
+            end
+        end)
+    end
+end)
+
+-- 3. Xóa bỏ Texture, Decal, Particle và chặn đứng chớp sáng đỏ/vàng lúc hoàn thành nhiệm vụ
+task.spawn(function()
+    -- Vòng lặp quét liên tục để xóa hiệu ứng ám màu đỏ/vàng do nhiệm vụ nhặt trứng gây ra
+    task.spawn(function()
+        while true do
+            pcall(function()
+                local Lighting = game:GetService("Lighting")
+                for _, v in ipairs(Lighting:GetChildren()) do
+                    if v:IsA("ColorCorrectionEffect") and v.Name ~= "PerfectBrightnessCC" then
+                        v:Destroy()
+                    end
+                end
+                -- Quét các Frame chớp sáng đỏ/vàng trong PlayerGui hoặc CoreGui nếu có
+                for _, gui in ipairs(game:GetService("Players").LocalPlayer.PlayerGui:GetDescendants()) do
+                    if gui:IsA("Frame") and (gui.BackgroundColor3.R > 0.7 and (gui.BackgroundColor3.G > 0.4 or gui.BackgroundColor3.G < 0.2)) and gui.BackgroundTransparency < 1 then
+                        gui.Visible = false
+                    end
+                end
+            end)
+            task.wait(0.1)
+        end
+    end)
+
+    for _, v in ipairs(workspace:GetDescendants()) do
+        pcall(function()
+            if v:IsA("Part") or v:IsA("UnionOperation") or v:IsA("MeshPart") or v:IsA("CornerWedgePart") or v:IsA("TrussPart") then
+                v.Material = Enum.Material.SmoothPlastic
+                v.Reflectance = 0
+                v.CastShadow = false
+                v.CanQuery = false
+            elseif v:IsA("Decal") or v:IsA("Texture") or v:IsA("SpecialMesh") then
+                v:Destroy()
+            elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Sparkles") or v:IsA("Beam") or v:IsA("Explosion") or v:IsA("Highlight") then
+                v:Destroy()
+            elseif v:IsA("Sound") then
+                v.Volume = 0
+            end
+        end)
+    end
+end)
+
+-- 4. Xóa hiệu ứng nước
+local Terrain = workspace:FindFirstChildOfClass("Terrain")
+if Terrain then
+    pcall(function()
+        Terrain.WaterWaveSize = 0
+        Terrain.WaterWaveTransparency = 1
+        Terrain.WaterReflectance = 0
+        Terrain.WaterTransparency = 1
+    end)
+end
+
+-- ==========================================
+-- 🔔 THÔNG BÁO GÓC DƯỚI BÊN PHẢI
+-- ==========================================
+pcall(function()
+    local CoreGui = game:GetService("CoreGui")
+    local Players = game:GetService("Players")
+    local plr = Players.LocalPlayer
+
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "ForestOasisSimpleNotif"
+    screenGui.ResetOnSpawn = false
+    
+    if gethui then
+        screenGui.Parent = gethui()
+    elseif syn and syn.protect_gui then
+        syn.protect_gui(screenGui)
+        screenGui.Parent = CoreGui
+    else
+        screenGui.Parent = plr:WaitForChild("PlayerGui")
+    end
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 260, 0, 50)
+    frame.Position = UDim2.new(1, -275, 1, -75) -- Góc dưới bên phải
+    frame.BackgroundColor3 = Color3.fromRGB(20, 25, 20)
+    frame.BorderSizePixel = 0
+    frame.Parent = screenGui
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(46, 204, 113)
+    stroke.Thickness = 1.5
+    stroke.Parent = frame
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = frame
+
+    local label1 = Instance.new("TextLabel")
+    label1.Size = UDim2.new(1, -10, 0, 20)
+    label1.Position = UDim2.new(0, 10, 0, 5)
+    label1.BackgroundTransparency = 1
+    label1.Text = "ForestOasis FixLag"
+    label1.TextColor3 = Color3.fromRGB(46, 204, 113)
+    label1.Font = Enum.Font.GothamBold
+    label1.TextSize = 12
+    label1.TextXAlignment = Enum.TextXAlignment.Left
+    label1.Parent = frame
+
+    local label2 = Instance.new("TextLabel")
+    label2.Size = UDim2.new(1, -10, 0, 20)
+    label2.Position = UDim2.new(0, 10, 0, 24)
+    label2.BackgroundTransparency = 1
+    label2.Text = "Đã bật FixLag Thành công!"
+    label2.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label2.Font = Enum.Font.GothamMedium
+    label2.TextSize = 11
+    label2.TextXAlignment = Enum.TextXAlignment.Left
+    label2.Parent = frame
+
+    -- Tự hủy thông báo sau 4 giây
+    task.spawn(function()
+        task.wait(4)
+        pcall(function()
+            screenGui:Destroy()
+        end)
+    end)
+end)
