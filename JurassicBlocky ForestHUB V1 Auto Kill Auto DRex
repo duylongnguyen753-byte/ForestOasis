@@ -1,0 +1,145 @@
+-- ========================================================
+-- Jurassic Blocky - FOREST HUB 1.0 (Locked Vertical Aim)
+-- ========================================================
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "🦖 Jurassic Blocky | FOREST HUB 1.0",
+   LoadingTitle = "🌲 FOREST HUB - Initializing...",
+   LoadingSubtitle = "Loading Vertical Look Modules...",
+   ConfigurationSaving = {
+      Enabled = false,
+      FolderName = "ForestHubConfig",
+      FileName = "JurassicConfig"
+   },
+   Discord = {
+      Enabled = false,
+      Invite = "noinvite",
+      RememberJoins = true
+   },
+   KeySystem = false,
+   KeySettings = {
+      Title = "Forest Hub | Key",
+      Subtitle = "Key System",
+      Note = "No key required",
+      FileName = "ForestKey",
+      SaveKey = true,
+      GrabKeyFromSite = "",
+      Key = {"123"}
+   }
+})
+
+-- Thiết lập Tab giao diện chính
+local Tabs = {
+    Combat = Window:CreateTab("Combat & Boss Farm", 4483362458),
+    Player = Window:CreateTab("Player Mods", 4483362458)
+}
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local LocalPlayer = Players.LocalPlayer
+
+local AutoKillActive = false
+local BossFarmActive = false
+local Connection = nil
+
+-- Combat Configuration Variables
+local SafeHeight = 12 
+local AttackSpeed = 0.22 
+local OffsetBackward = 2.5 
+local OffsetRight = 0      
+
+-- Target Locking Variables
+local LockedPlayerTarget = nil
+local LockedBossTarget = nil
+local LastAttackTick = 0
+
+-- ========================================================
+-- FIXED PLAYER ESP LOGIC (Guaranteed 100% Player Coverage)
+-- ========================================================
+local ESPEnabled = false
+local Highlights = {}
+
+local function UpdatePlayerESP()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local char = player.Character
+            if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                
+                if hum.Health > 0 then
+                    if not Highlights[player] or Highlights[player].Parent ~= char then
+                        if Highlights[player] then 
+                            pcall(function() Highlights[player]:Destroy() end) 
+                        end
+                        
+                        local hl = Instance.new("Highlight")
+                        hl.Name = "ForestHub_PlayerESP"
+                        hl.Adornee = char
+                        hl.FillColor = Color3.fromRGB(15, 80, 35) -- Dark Emerald
+                        hl.OutlineColor = Color3.fromRGB(0, 255, 100) -- Neon Green LED
+                        hl.FillTransparency = 0.3
+                        hl.OutlineTransparency = 0
+                        hl.Enabled = ESPEnabled
+                        hl.Parent = char
+                        
+                        Highlights[player] = hl
+                    else
+                        Highlights[player].Enabled = ESPEnabled
+                    end
+                else
+                    if Highlights[player] then
+                        Highlights[player].Enabled = false
+                    end
+                end
+            else
+                if Highlights[player] then
+                    pcall(function() Highlights[player]:Destroy() end)
+                    Highlights[player] = nil
+                end
+            end
+        end
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if ESPEnabled then
+        UpdatePlayerESP()
+    end
+end)
+
+local function ToggleESPState(state)
+    ESPEnabled = state
+    if not ESPEnabled then
+        for _, hl in pairs(Highlights) do
+            if hl then hl.Enabled = false end
+        end
+    end
+end
+
+-- ========================================================
+-- LOCKED TARGET FUNCTIONS
+-- ========================================================
+local function GetLockedPlayer()
+    if LockedPlayerTarget and LockedPlayerTarget.Character then
+        local hum = LockedPlayerTarget.Character:FindFirstChildOfClass("Humanoid")
+        local hrp = LockedPlayerTarget.Character:FindFirstChild("HumanoidRootPart")
+        if hum and hum.Health > 0 and hrp then
+            return hrp
+        end
+    end
+    
+    LockedPlayerTarget = nil
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+    
+    local nearestPlayer = nil
+    local shortestDist = math.huge
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local targetHrp = player.Character:FindFirstChild("HumanoidRootPart")
+            local targetHum = player.Character:FindFi
