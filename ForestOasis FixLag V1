@@ -1,5 +1,5 @@
 -- ==========================================
--- 🚀 FOREST OASIS - V30 ULTIMATE FIXLAG + ANTI-STRETCH + REMOVE OBJECT LIGHTS
+-- 🚀 FOREST OASIS - V32 ULTIMATE FIXLAG (FIX TREADMILL + CUSTOM NOTIF)
 -- ==========================================
 
 -- 1. Giảm cấu hình đồ họa game tối đa
@@ -43,9 +43,8 @@ pcall(function()
     end
 end)
 
--- 3. Xóa bỏ Texture, Decal, Particle, chặn chớp sáng đỏ/vàng và dập tắt mọi nguồn sáng từ đồ vật
+-- 3. Xóa bỏ Texture, Decal, Particle, chặn chớp sáng và nguồn sáng nhưng giữ va chạm leo máy chạy bộ
 task.spawn(function()
-    -- Vòng lặp quét liên tục để xóa hiệu ứng ám màu đỏ/vàng do nhiệm vụ
     task.spawn(function()
         while true do
             pcall(function()
@@ -67,11 +66,9 @@ task.spawn(function()
 
     local function cleanPartAndLights(v)
         pcall(function()
-            -- Xóa các nguồn sáng phát ra từ đồ vật (Đèn, hiệu ứng phát sáng vùng)
             if v:IsA("PointLight") or v:IsA("SurfaceLight") or v:IsA("SpotLight") or v:IsA("Highlight") then
                 v:Destroy()
             elseif v:IsA("Part") or v:IsA("UnionOperation") or v:IsA("MeshPart") or v:IsA("CornerWedgePart") or v:IsA("TrussPart") then
-                -- Nếu vật thể là Neon (tự phát sáng chói), đổi về nhựa mịn bình thường
                 if v.Material == Enum.Material.Neon then
                     v.Material = Enum.Material.SmoothPlastic
                 else
@@ -79,7 +76,6 @@ task.spawn(function()
                 end
                 v.Reflectance = 0
                 v.CastShadow = false
-                v.CanQuery = false
             elseif v:IsA("Decal") or v:IsA("Texture") or v:IsA("SpecialMesh") then
                 v:Destroy()
             elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Sparkles") or v:IsA("Beam") or v:IsA("Explosion") then
@@ -225,7 +221,7 @@ pcall(function()
     label1.Size = UDim2.new(1, -10, 0, 20)
     label1.Position = UDim2.new(0, 10, 0, 5)
     label1.BackgroundTransparency = 1
-    label1.Text = "ForestOasis FixLag V30"
+    label1.Text = "ForestOasis - FixLag V1"
     label1.TextColor3 = Color3.fromRGB(46, 204, 113)
     label1.Font = Enum.Font.GothamBold
     label1.TextSize = 12
@@ -236,7 +232,7 @@ pcall(function()
     label2.Size = UDim2.new(1, -10, 0, 20)
     label2.Position = UDim2.new(0, 10, 0, 24)
     label2.BackgroundTransparency = 1
-    label2.Text = "Đã bật FixLag & Xóa ánh sáng đồ vật!"
+    label2.Text = "Đã thành công!"
     label2.TextColor3 = Color3.fromRGB(255, 255, 255)
     label2.Font = Enum.Font.GothamMedium
     label2.TextSize = 11
