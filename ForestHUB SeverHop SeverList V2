@@ -1,5 +1,5 @@
 -- ========================================================
--- 🌿 FORESTHUB • ULTIMATE SERVER HOP & TOOLS (V3 EXACT 1-PLAYER FIX) 🌿
+-- 🌿 FORESTHUB • ULTIMATE SERVER HOP & TOOLS (V2 EXACT 1-PLAYER FIX) 🌿
 -- ========================================================
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
@@ -492,7 +492,7 @@ Instance.new("UICorner", CopyDiscordBtn).CornerRadius = UDim.new(0, 6)
 
 CopyDiscordBtn.MouseButton1Click:Connect(function()
     pcall(function()
-        setclipboard("https://discord.gg/GQSHT2zTD")
+        setclipboard("https://discord.gg/h2VZdgmdV")
     end)
     CopyDiscordBtn.Text = "✅ COPIED!"
     task.wait(1.5)
