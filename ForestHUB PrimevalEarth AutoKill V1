@@ -1,5 +1,5 @@
 -- ========================================================
--- PRIMEVAL EARTH | WINDUI (FORESTHUB ON TOP - FIXED SPELLING)
+-- PRIMEVAL EARTH | WINDUI (FORESTHUB ON TOP - AUTO TARGET KILL)
 -- ========================================================
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
@@ -18,7 +18,7 @@ local Window = WindUI:CreateWindow({
 
 WindUI:Notify({
     Title = "🦖 ForestHUB Đã Khởi Động!",
-    Content = "✨ Đã sửa lỗi chính tả thành công!",
+    Content = "✨ Đã thêm tính năng Auto Target Kill thành công!",
     Duration = 5
 })
 
@@ -38,6 +38,7 @@ local Camera = Workspace.CurrentCamera
 
 -- Default all features to OFF
 local AutoKillActive = false
+local AutoTargetKillActive = false
 local AutoDodgeActive = false
 local EmergencyEscapeActive = false
 local AntiShakeCameraActive = false
@@ -216,6 +217,22 @@ local function GetTarget()
     return LockedTarget
 end
 
+-- Lấy mục tiêu riêng theo người chơi được chọn trong Dropdown
+local function GetSelectedPlayerTarget()
+    if not SelectedTargetPlayerName or SelectedTargetPlayerName == "" or SelectedTargetPlayerName == "Không có ai khác" then
+        return nil
+    end
+    local targetPlayer = Players:FindFirstChild(SelectedTargetPlayerName)
+    if targetPlayer and targetPlayer.Character then
+        local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local hum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hrp and hum and hum.Health > 0 then
+            return hrp
+        end
+    end
+    return nil
+end
+
 -- ========================================================
 -- WINDUI ELEMENTS (COMBAT TAB)
 -- ========================================================
@@ -225,7 +242,7 @@ Tabs.Combat:Paragraph({
 })
 
 Tabs.Combat:Toggle({
-    Title = "⚡ Auto Kill (Bám Sát & Cắn 10s - Né 2s)",
+    Title = "⚡ Auto Kill (Bám Sát & Cắn Toàn Bộ Mục Tiêu Gần)",
     Default = false,
     Callback = function(Value)
         AutoKillActive = Value
@@ -238,10 +255,10 @@ Tabs.Combat:Toggle({
 
 Tabs.Combat:Divider()
 
--- PHẦN CHỌN PLAYER VÀ NÚT TELEPORT
+-- PHẦN CHỌN PLAYER VÀ TELEPORT / AUTO TARGET KILL
 Tabs.Combat:Paragraph({
-    Title = "🎯 DỊCH CHUYỂN ĐẾN MỤC TIÊU (TELEPORT)",
-    Desc = "Chọn tên người chơi bên dưới và bấm nút để dịch chuyển tới vị trí của họ."
+    Title = "🎯 DỊCH CHUYỂN & KẺ THÙ ĐƯỢC CHỌN",
+    Desc = "Chọn người chơi để dịch chuyển hoặc bật Auto Target Kill riêng người đó."
 })
 
 local PlayerListDropdown = nil
@@ -299,6 +316,15 @@ Tabs.Combat:Button({
         else
         	WindUI:Notify({Title = "❌ Lỗi", Content = "Người chơi này đã rời game hoặc không tồn tại!", Duration = 2})
         end
+    end
+})
+
+Tabs.Combat:Toggle({
+    Title = "🎯 Auto Target Kill (Cắn Người Đã Chọn)",
+    Default = false,
+    Callback = function(Value)
+        AutoTargetKillActive = Value
+        WindUI:Notify({Title = "🎯 Auto Target Kill", Content = Value and "Đã Bật nhắm mục tiêu riêng!" or "Đã Tắt!", Duration = 2})
     end
 })
 
@@ -485,6 +511,35 @@ RunService.RenderStepped:Connect(function(dt)
         end
         
         -- NHÁNH 2: COMBAT & DEFENSE
+        
+        -- ƯU TIÊN 1: AUTO TARGET KILL (NẾU BẬT VÀ CÓ CHỌN TÊN)
+        if AutoTargetKillActive then
+            local specificTargetHrp = GetSelectedPlayerTarget()
+            if specificTargetHrp then
+                OrbitAngle = OrbitAngle + (OrbitSpeed * dt)
+                local targetVelocity = specificTargetHrp.AssemblyLinearVelocity or Vector3.new(0,0,0)
+                local predictedPos = specificTargetHrp.Position + (targetVelocity * 0.04)
+                
+                local offsetX = math.cos(OrbitAngle) * OrbitRadius
+                local offsetZ = math.sin(OrbitAngle) * OrbitRadius
+                
+                local strictLockPos = predictedPos + Vector3.new(offsetX, 0.5, offsetZ)
+                hrp.CFrame = CFrame.new(strictLockPos, specificTargetHrp.Position)
+                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                
+                -- Spam cắn liên tục người được chọn
+                if currentTime - LastAttackTick >= 0.05 then
+                    LastAttackTick = currentTime
+                    pcall(function()
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                        task.wait(0.002)
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                    end)
+                end
+                return
+            end
+        end
+
         local currentTarget = GetTarget()
         
         if AutoDodgeActive and not IsDodging and (currentTime - DodgeCooldown > 1.2) then
@@ -528,7 +583,7 @@ RunService.RenderStepped:Connect(function(dt)
             return
         end
         
-        -- 2.3: AUTO KILL (10s Cắn, 2s Né Lên Cao)
+        -- 2.3: AUTO KILL (10s Cắn, 2s Né Lên Cao - Mặc định toàn server)
         if AutoKillActive and currentTarget then
             if CombatState == 1 then
                 if StateTimer == 0 then
