@@ -1,12 +1,13 @@
 -- ========================================================
--- PRIMEVAL EARTH | FORESTHUB ENGLISH UI EDITION
+-- PRIMEVAL EARTH | FORESTHUB (CLEAN VERSION)
 -- ========================================================
+
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "🦖 Primeval Earth | ForestHUB",
-   LoadingTitle = "🌲 ForestHUB - Loading...",
-   LoadingSubtitle = "Loading Script...",
+   Name = "🦖 Primeval Earth | ForestHUB v2.0",
+   LoadingTitle = "🌲 ForestHUB Loading...",
+   LoadingSubtitle = "By Team Forest - Optimized for Delta",
    ConfigurationSaving = {
       Enabled = false,
       FolderName = "ForestHubConfig",
@@ -21,8 +22,8 @@ local Window = Rayfield:CreateWindow({
 })
 
 local Tabs = {
-    Combat = Window:CreateTab("Combat", 4483362458),
-    Player = Window:CreateTab("Player Mods", 4483362458)
+    Combat = Window:CreateTab("⚔️ Combat Hub", 4483362458),
+    Player = Window:CreateTab("🛡️ Player & ESP", 4483362458)
 }
 
 local Players = game:GetService("Players")
@@ -38,14 +39,14 @@ local AutoDodgeActive = false
 local EmergencyEscapeActive = false
 local AntiShakeCameraActive = false
 
--- Combat & Timing Configuration (Attack 5s - Escape 2s)
+-- Combat & Timing Configuration (Attack 7s - Escape 2s)
 local SafeHeight = 140       
-local AttackDuration = 5.0   
+local AttackDuration = 7.0   
 local EscapeDuration = 2.0   
 
 local CustomSpeed = 100      
-local OrbitRadius = 5.0      
-local OrbitSpeed = 18.0      
+local OrbitRadius = 2.0      
+local OrbitSpeed = 40.0      
 
 local CombatState = 1        
 local StateTimer = 0
@@ -60,6 +61,9 @@ local LastHealth = 100
 local IsDodging = false
 local DodgeTimer = 0
 local DodgeCooldown = 0
+
+-- Biến khóa cứng vị trí camera với độ mượt ổn định
+local LockedCameraPosition = nil
 
 -- ========================================================
 -- PLAYER ESP SYSTEM
@@ -144,7 +148,7 @@ local function UpdatePlayerESP()
 end
 
 -- ========================================================
--- GET TARGET FUNCTION WITH LOCK SYSTEM
+-- GET TARGET FUNCTION
 -- ========================================================
 local function GetTarget()
     local char = LocalPlayer.Character
@@ -180,12 +184,15 @@ local function GetTarget()
 end
 
 -- ========================================================
--- RAYFIELD UI ELEMENTS (English UI / Default OFF)
+-- RAYFIELD UI ELEMENTS
 -- ========================================================
+Tabs.Combat:CreateSection("🔥 Main Attack System")
+
 Tabs.Combat:CreateToggle({
-   Name = "Auto Kill",
+   Name = "Auto Kill (Bám & Cắn Tự Động)",
    CurrentValue = false,
    Flag = "AutoKillToggle",
+   Icon = "swords",
    Callback = function(Value)
       AutoKillActive = Value
       CombatState = 1
@@ -194,62 +201,71 @@ Tabs.Combat:CreateToggle({
    end,
 })
 
-Tabs.Combat:CreateSection("Survival, Dodge & Camera Settings")
+Tabs.Combat:CreateSection("🛡️ Defense, Camera & Adjustments")
 
 Tabs.Combat:CreateToggle({
-   Name = "Anti-Shake Camera",
+   Name = "Anti-Shake Camera (Chống Rung Màn Hình)",
    CurrentValue = false,
    Flag = "AntiShakeToggle",
+   Icon = "camera-off",
    Callback = function(Value)
       AntiShakeCameraActive = Value
+      LockedCameraPosition = nil
    end,
 })
 
 Tabs.Combat:CreateToggle({
-   Name = "Auto Dodge",
+   Name = "Auto Dodge (Tự Động Né Đòn Khi Mất Máu)",
    CurrentValue = false,
    Flag = "AutoDodgeToggle",
+   Icon = "shield-alert",
    Callback = function(Value)
       AutoDodgeActive = Value
    end,
 })
 
 Tabs.Combat:CreateSlider({
-   Name = "Bite / Orbit Distance (0 - 100)",
+   Name = "Bite / Orbit Distance (Khoảng cách cắn)",
    Range = {0, 100},
    Increment = 1,
-   CurrentValue = 5,
+   CurrentValue = 2,
    Flag = "OrbitRadiusSlider",
+   Icon = "orbit",
    Callback = function(Value)
       OrbitRadius = Value
    end,
 })
 
 Tabs.Combat:CreateSlider({
-   Name = "Combat & Movement Speed (0 - 1000)",
+   Name = "Combat & Movement Speed (Tốc độ)",
    Range = {0, 1000},
    Increment = 10,
    CurrentValue = 100,
    Flag = "CustomSpeedSlider",
+   Icon = "gauge",
    Callback = function(Value)
       CustomSpeed = Value
    end,
 })
 
 Tabs.Combat:CreateToggle({
-   Name = "Emergency Low-HP Escape (<25% Health)",
+   Name = "Emergency Low-HP Escape (Bay khẩn cấp <25%)",
    CurrentValue = false,
    Flag = "EmergencyEscapeToggle",
+   Icon = "heart-pulse",
    Callback = function(Value)
       EmergencyEscapeActive = Value
       IsDodging = false
    end,
 })
 
+Tabs.Player:CreateSection("👁️ Vision & Visuals")
+
 Tabs.Player:CreateToggle({
-   Name = "Player ESP (Green Highlight, Name & HP)",
+   Name = "Player ESP (Nhìn Xuyên Tường, Hiển Thị Máu)",
    CurrentValue = false,
    Flag = "ESP_EN",
+   Icon = "scan-eye",
    Callback = function(Value)
       ESPEnabled = Value
       if not ESPEnabled then
@@ -280,9 +296,21 @@ RunService.RenderStepped:Connect(function()
             humanoid.WalkSpeed = CustomSpeed
         end)
         
-        local cachedCameraCFrame = Camera.CFrame
         local currentTarget = GetTarget()
         local currentTime = tick()
+        
+        -- HỆ THỐNG CHỐNG RUNG (Ổn định mượt mà)
+        if AntiShakeCameraActive then
+            local currentCamCF = Camera.CFrame
+            if not LockedCameraPosition then
+                LockedCameraPosition = currentCamCF
+            else
+                LockedCameraPosition = LockedCameraPosition:Lerp(currentCamCF, 0.15)
+                Camera.CFrame = LockedCameraPosition
+            end
+        else
+            LockedCameraPosition = nil
+        end
         
         local currentHealth = humanoid.Health
         if AutoDodgeActive and currentHealth < LastHealth and currentTarget and not IsDodging and (currentTime - DodgeCooldown > 1.5) then
@@ -295,12 +323,8 @@ RunService.RenderStepped:Connect(function()
         -- 1. AUTO DODGE
         if IsDodging and currentTarget then
             local dodgePos = currentTarget.Position + Vector3.new(0, SafeHeight, 0)
-            hrp.CFrame = CFrame.new(dodgePos, currentTarget.Position)
+            hrp.CFrame = CFrame.new(dodgePos, hrp.Position + hrp.CFrame.LookVector)
             hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            
-            if AntiShakeCameraActive then
-                Camera.CFrame = cachedCameraCFrame
-            end
             
             if currentTime - DodgeTimer >= 0.8 then
                 IsDodging = false
@@ -313,15 +337,12 @@ RunService.RenderStepped:Connect(function()
         -- 2. EMERGENCY ESCAPE
         if EmergencyEscapeActive and humanoid.Health > 0 and (humanoid.Health / humanoid.MaxHealth) < 0.25 and currentTarget then
             local emergencyPos = currentTarget.Position + Vector3.new(0, SafeHeight + 50, 0)
-            hrp.CFrame = CFrame.new(emergencyPos, currentTarget.Position)
+            hrp.CFrame = CFrame.new(emergencyPos, hrp.Position + hrp.CFrame.LookVector)
             hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            if AntiShakeCameraActive then
-                Camera.CFrame = cachedCameraCFrame
-            end
             return
         end
         
-        -- 3. COMBAT ORBIT (Attack 5s -> Escape high 2s)
+        -- 3. COMBAT ORBIT (7s cắn, 2s né lên cao)
         if AutoKillActive and currentTarget then
             if CombatState == 1 then
                 if StateTimer == 0 then
@@ -329,22 +350,23 @@ RunService.RenderStepped:Connect(function()
                 end
                 
                 OrbitAngle = OrbitAngle + (OrbitSpeed * RunService.RenderStepped:Wait())
+                
+                local targetVelocity = currentTarget.AssemblyLinearVelocity or Vector3.new(0,0,0)
+                local predictedPos = currentTarget.Position + (targetVelocity * 0.04)
+                
                 local offsetX = math.cos(OrbitAngle) * OrbitRadius
                 local offsetZ = math.sin(OrbitAngle) * OrbitRadius
                 
-                local orbitPos = currentTarget.Position + Vector3.new(offsetX, 2.5, offsetZ)
-                hrp.CFrame = CFrame.new(orbitPos, currentTarget.Position)
+                local strictLockPos = predictedPos + Vector3.new(offsetX, 0.5, offsetZ)
+                hrp.CFrame = CFrame.new(strictLockPos, currentTarget.Position)
                 hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 
-                if AntiShakeCameraActive then
-                    Camera.CFrame = cachedCameraCFrame
-                end
-                
-                if currentTime - LastAttackTick >= 0.15 then
+                -- Spam cắn liên tục
+                if currentTime - LastAttackTick >= 0.05 then
                     LastAttackTick = currentTime
                     pcall(function()
                         VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-                        task.wait(0.01)
+                        task.wait(0.002)
                         VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
                     end)
                 end
@@ -356,12 +378,8 @@ RunService.RenderStepped:Connect(function()
                 
             elseif CombatState == 2 then
                 local escapePos = currentTarget.Position + Vector3.new(0, SafeHeight, 0)
-                hrp.CFrame = CFrame.new(escapePos, currentTarget.Position)
+                hrp.CFrame = CFrame.new(escapePos, hrp.Position + hrp.CFrame.LookVector)
                 hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                
-                if AntiShakeCameraActive then
-                    Camera.CFrame = cachedCameraCFrame
-                end
                 
                 if currentTime - StateTimer >= EscapeDuration then
                     CombatState = 1
