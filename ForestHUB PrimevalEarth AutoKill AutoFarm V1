@@ -1,5 +1,5 @@
 -- ========================================================
--- PRIMEVAL EARTH | WINDUI (FORESTHUB ON TOP - CUSTOM UI ORDER)
+-- PRIMEVAL EARTH | WINDUI (FORESTHUB - FIXED AUTO TARGET KILL)
 -- ========================================================
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
@@ -18,7 +18,7 @@ local Window = WindUI:CreateWindow({
 
 WindUI:Notify({
     Title = "🦖 ForestHUB Đã Khởi Động!",
-    Content = "✨ Đã di chuyển thanh khoảng cách cắn lên cạnh Auto Kill!",
+    Content = "✨ Đã sửa và tối ưu tính năng Auto Target Kill!",
     Duration = 5
 })
 
@@ -44,7 +44,7 @@ local EmergencyEscapeActive = false
 local AntiShakeCameraActive = false
 local IsAutoFarmRunning = false
 
--- Combat & Timing Configuration (Attack 10s - Escape 2s)
+-- Combat & Timing Configuration
 local SafeHeight = 140       
 local AttackDuration = 10.0   
 local EscapeDuration = 2.0   
@@ -182,7 +182,7 @@ local function UpdatePlayerESP()
 end
 
 -- ========================================================
--- GET TARGET FUNCTION
+-- GET TARGET FUNCTIONS
 -- ========================================================
 local function GetTarget()
     local char = LocalPlayer.Character
@@ -217,8 +217,8 @@ local function GetTarget()
     return LockedTarget
 end
 
--- Lấy mục tiêu riêng theo người chơi được chọn trong Dropdown
-local function GetSelectedPlayerTarget()
+-- Lấy trực tiếp HumanoidRootPart của đúng người chơi được chọn trong danh sách
+local function GetSelectedPlayerTargetHRP()
     if not SelectedTargetPlayerName or SelectedTargetPlayerName == "" or SelectedTargetPlayerName == "Không có ai khác" then
         return nil
     end
@@ -253,7 +253,6 @@ Tabs.Combat:Toggle({
     end
 })
 
--- THANH KÉO KHOẢNG CÁCH CẮN ĐẶT NGAY DƯỚI AUTO KILL
 Tabs.Combat:Slider({
     Title = "🎯 Bite / Orbit Distance (Khoảng cách cắn)",
     Step = 0.1,
@@ -265,10 +264,10 @@ Tabs.Combat:Slider({
 
 Tabs.Combat:Divider()
 
--- PHẦN CHỌN PLAYER VÀ TELEPORT / AUTO TARGET KILL
+-- PHẦN CHỌN PLAYER VÀ TELEPORT / AUTO TARGET KILL RIÊNG BIỆT
 Tabs.Combat:Paragraph({
-    Title = "🎯 DỊCH CHUYỂN & KẺ THÙ ĐƯỢC CHỌN",
-    Desc = "Chọn người chơi để dịch chuyển hoặc bật Auto Target Kill riêng người đó."
+    Title = "🎯 DỊCH CHUYỂN & CHỌN MỤC TIÊU RIÊNG",
+    Desc = "Chọn đúng tên người chơi bạn muốn truy sát bên dưới."
 })
 
 local PlayerListDropdown = nil
@@ -330,11 +329,15 @@ Tabs.Combat:Button({
 })
 
 Tabs.Combat:Toggle({
-    Title = "🎯 Auto Target Kill (Cắn Người Đã Chọn)",
+    Title = "🎯 Auto Target Kill (Chỉ Giết Người Được Chọn)",
     Default = false,
     Callback = function(Value)
         AutoTargetKillActive = Value
-        WindUI:Notify({Title = "🎯 Auto Target Kill", Content = Value and "Đã Bật nhắm mục tiêu riêng!" or "Đã Tắt!", Duration = 2})
+        if Value and (not SelectedTargetPlayerName or SelectedTargetPlayerName == "" or SelectedTargetPlayerName == "Không có ai khác") then
+            WindUI:Notify({Title = "⚠️ Chú ý", Content = "Bạn chưa chọn tên người chơi cụ thể trong danh sách!", Duration = 3})
+        else
+            WindUI:Notify({Title = "🎯 Auto Target Kill", Content = Value and ("Đang truy sát: " .. tostring(SelectedTargetPlayerName)) or "Đã Tắt!", Duration = 2})
+        end
     end
 })
 
@@ -458,7 +461,7 @@ Tabs.Settings:Button({
 local ESPUpdateTimer = 0
 
 -- ========================================================
--- MAIN LOOP (TÁCH BIỆT RÕ RÀNG AN TOÀN)
+-- MAIN LOOP
 -- ========================================================
 RunService.RenderStepped:Connect(function(dt)
     local char = LocalPlayer.Character
@@ -495,7 +498,7 @@ RunService.RenderStepped:Connect(function(dt)
             LockedCameraPosition = nil
         end
         
-        -- NHÁNH 1: AUTO FARM ROUTE (9 ĐIỂM - CHỜ 10.5S)
+        -- NHÁNH 1: AUTO FARM ROUTE
         if IsAutoFarmRunning then
             local targetPos = FarmPoints[farmIndex]
             hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
@@ -511,24 +514,22 @@ RunService.RenderStepped:Connect(function(dt)
             return 
         end
         
-        -- NHÁNH 2: COMBAT & DEFENSE
-        
-        -- ƯU TIÊN 1: AUTO TARGET KILL (NẾU BẬT VÀ CÓ CHỌN TÊN)
+        -- NHÁNH 2: AUTO TARGET KILL (CHỈ TIÊU DIỆT ĐÚNG MỤC TIÊU ĐƯỢC CHỌN)
         if AutoTargetKillActive then
-            local specificTargetHrp = GetSelectedPlayerTarget()
-            if specificTargetHrp then
+            local targetHrp = GetSelectedPlayerTargetHRP()
+            if targetHrp then
                 OrbitAngle = OrbitAngle + (OrbitSpeed * dt)
-                local targetVelocity = specificTargetHrp.AssemblyLinearVelocity or Vector3.new(0,0,0)
-                local predictedPos = specificTargetHrp.Position + (targetVelocity * 0.04)
+                local targetVelocity = targetHrp.AssemblyLinearVelocity or Vector3.new(0,0,0)
+                local predictedPos = targetHrp.Position + (targetVelocity * 0.04)
                 
                 local offsetX = math.cos(OrbitAngle) * OrbitRadius
                 local offsetZ = math.sin(OrbitAngle) * OrbitRadius
                 
                 local strictLockPos = predictedPos + Vector3.new(offsetX, 0.5, offsetZ)
-                hrp.CFrame = CFrame.new(strictLockPos, specificTargetHrp.Position)
+                hrp.CFrame = CFrame.new(strictLockPos, targetHrp.Position)
                 hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 
-                -- Spam cắn liên tục người được chọn
+                -- Spam cắn liên tục người chơi đó
                 if currentTime - LastAttackTick >= 0.05 then
                     LastAttackTick = currentTime
                     pcall(function()
@@ -537,10 +538,11 @@ RunService.RenderStepped:Connect(function(dt)
                         VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
                     end)
                 end
-                return
+                return -- Chặn không cho chạy các lệnh combat khác khi đang focus mục tiêu này
             end
         end
 
+        -- NHÁNH 3: AUTO KILL THƯỜNG & DEFENSE
         local currentTarget = GetTarget()
         
         if AutoDodgeActive and not IsDodging and (currentTime - DodgeCooldown > 1.2) then
@@ -561,7 +563,6 @@ RunService.RenderStepped:Connect(function(dt)
             end
         end
         
-        -- 2.1: AUTO DODGE (Né lên cao khi bị áp sát tấn công)
         if IsDodging then
             local escapeRefPos = currentTarget and currentTarget.Position or hrp.Position
             local dodgePos = escapeRefPos + Vector3.new(0, SafeHeight, 0)
@@ -576,7 +577,6 @@ RunService.RenderStepped:Connect(function(dt)
             return
         end
         
-        -- 2.2: EMERGENCY ESCAPE
         if EmergencyEscapeActive and humanoid.Health > 0 and (humanoid.Health / humanoid.MaxHealth) < 0.25 and currentTarget then
             local emergencyPos = currentTarget.Position + Vector3.new(0, SafeHeight + 50, 0)
             hrp.CFrame = CFrame.new(emergencyPos, hrp.Position + hrp.CFrame.LookVector)
@@ -584,7 +584,6 @@ RunService.RenderStepped:Connect(function(dt)
             return
         end
         
-        -- 2.3: AUTO KILL (10s Cắn, 2s Né Lên Cao - Mặc định toàn server)
         if AutoKillActive and currentTarget then
             if CombatState == 1 then
                 if StateTimer == 0 then
@@ -603,7 +602,6 @@ RunService.RenderStepped:Connect(function(dt)
                 hrp.CFrame = CFrame.new(strictLockPos, currentTarget.Position)
                 hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 
-                -- Spam cắn liên tục
                 if currentTime - LastAttackTick >= 0.05 then
                     LastAttackTick = currentTime
                     pcall(function()
