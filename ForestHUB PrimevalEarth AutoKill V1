@@ -1,5 +1,5 @@
 -- ========================================================
--- PRIMEVAL EARTH | FORESTHUB (CLEAN VERSION)
+-- PRIMEVAL EARTH | FORESTHUB (10S ATTACK - 2S ESCAPE)
 -- ========================================================
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -39,10 +39,10 @@ local AutoDodgeActive = false
 local EmergencyEscapeActive = false
 local AntiShakeCameraActive = false
 
--- Combat & Timing Configuration (Attack 7s - Escape 2s)
+-- Combat & Timing Configuration (Attack 10s - Escape 2s)
 local SafeHeight = 140       
-local AttackDuration = 7.0   
-local EscapeDuration = 2.0   
+local AttackDuration = 10.0   -- Đã đổi thành 10 giây cắn
+local EscapeDuration = 2.0   -- Trốn 2 giây trên cao
 
 local CustomSpeed = 100      
 local OrbitRadius = 2.0      
@@ -342,7 +342,7 @@ RunService.RenderStepped:Connect(function()
             return
         end
         
-        -- 3. COMBAT ORBIT (7s cắn, 2s né lên cao)
+        -- 3. COMBAT ORBIT (10s cắn, 2s bay lên trốn)
         if AutoKillActive and currentTarget then
             if CombatState == 1 then
                 if StateTimer == 0 then
