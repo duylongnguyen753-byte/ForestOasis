@@ -1,30 +1,32 @@
 -- ========================================================
--- PRIMEVAL EARTH | FORESTHUB (10S ATTACK - 2S ESCAPE + 9 POINTS)
+-- PRIMEVAL EARTH | WINDUI (FOREST HUB ON TOP)
 -- ========================================================
 
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
-local Window = Rayfield:CreateWindow({
-   Name = "🦖 Primeval Earth | ForestHUB",
-   LoadingTitle = "🌲 ForestHUB Loading...",
-   LoadingSubtitle = "By Team Forest - Optimized for Delta",
-   ConfigurationSaving = {
-      Enabled = false,
-      FolderName = "ForestHubConfig",
-      FileName = "PrimevalEarthConfig"
-   },
-   Discord = {
-      Enabled = false,
-      Invite = "noinvite",
-      RememberJoins = true
-   },
-   KeySystem = false,
+local Window = WindUI:CreateWindow({
+    Title = "🦖 Primeval Earth | 🌟 ForestHUB",
+    Icon = "trees",
+    Author = "ForestHUB On Top",
+    Folder = "ForestHubConfigs",
+    Size = UDim2.fromOffset(580, 460),
+    Transparent = true,
+    Theme = "Plant", -- Tông màu Xanh lá chủ đạo
+    SideBarWidth = 160,
+    HasOutline = true
+})
+
+WindUI:Notify({
+    Title = "🦖 ForestHUB Đã Khởi Động!",
+    Content = "✨ Đã cập nhật tiêu đề thành công.",
+    Duration = 4
 })
 
 local Tabs = {
-    Combat = Window:CreateTab("⚔️ Combat Hub", "swords"),
-    Farm = Window:CreateTab("🌾 Auto Farm Route", "map"),
-    Player = Window:CreateTab("🛡️ Player & ESP", "eye")
+    Combat = Window:Tab({ Title = "⚔️ Combat Hub", Icon = "swords" }),
+    Farm = Window:Tab({ Title = "🌾 Auto Farm Route", Icon = "map" }),
+    Player = Window:Tab({ Title = "🛡️ Player & ESP", Icon = "eye" }),
+    Settings = Window:Tab({ Title = "⚙️ Settings & UI", Icon = "settings" })
 }
 
 local Players = game:GetService("Players")
@@ -46,7 +48,8 @@ local SafeHeight = 140
 local AttackDuration = 10.0   
 local EscapeDuration = 2.0   
 
-local CustomSpeed = 100      
+local CustomSpeed = 16      
+local CustomJumpPower = 50  
 local OrbitRadius = 2.0      
 local OrbitSpeed = 40.0      
 
@@ -58,17 +61,17 @@ local OrbitAngle = 0
 -- Target Lock Variables
 local LockedTarget = nil
 
--- Auto Dodge Variables
-local LastHealth = 100
+-- Auto Dodge Variables (Cơ chế né khi có người áp sát tấn công)
 local IsDodging = false
 local DodgeTimer = 0
 local DodgeCooldown = 0
+local ThreatDistance = 12.0 
 
 -- Camera Variables
 local LockedCameraPosition = nil
 
 -- ========================================================
--- AUTO FARM ROUTE CONFIG (TỌA ĐỘ THỨ 7 ĐÃ TĂNG Y THÊM 2)
+-- AUTO FARM ROUTE CONFIG (9 TỌA ĐỘ)
 -- ========================================================
 local FarmPoints = {
     Vector3.new(1446.5, 77.1, -677.8),
@@ -77,7 +80,7 @@ local FarmPoints = {
     Vector3.new(-510.2, 77.7, -430.4),
     Vector3.new(-166.4, 110.4, 391.5),
     Vector3.new(1086.6, 70.4, 463.8),
-    Vector3.new(-68.5, -66.9, -1487.0), -- Đã tăng Y từ -68.9 lên -66.9 (+2)
+    Vector3.new(-68.5, -66.9, -1487.0),
     Vector3.new(201.8, -36.2, -365.1),
     Vector3.new(-144.0, -100.5, 1035.6)
 }
@@ -87,15 +90,15 @@ local FarmParagraph = nil
 
 local function UpdateFarmStatus()
     if not FarmParagraph then return end
-    local statusText = IsAutoFarmRunning and "Đang Chạy 🟢" or "Đang Tắt 🔴"
-    local content = string.format("Trạng thái hệ thống: %s\n📍 Đang ở điểm lộ trình: %d / %d\n\n✨ Cơ chế: Dịch chuyển thông minh qua 9 điểm, đứng chờ 10 giây mỗi điểm và hoàn toàn KHÔNG đánh nhau khi đang chạy lộ trình.", statusText, farmIndex, #FarmPoints)
+    local statusText = IsAutoFarmRunning and "🟢 ĐANG CHẠY LỘ TRÌNH (9 Điểm)" or "🔴 ĐANG TẮT"
+    local content = string.format("• Trạng thái: %s\n• Đang ở điểm số: %d / %d\n\n✨ Hệ thống dịch chuyển mượt mà, đứng chờ 10s mỗi điểm.", statusText, farmIndex, #FarmPoints)
     pcall(function()
-        FarmParagraph:Set({Title = "📊 Tiến Độ Lộ Trình Farm", Content = content})
+        FarmParagraph:SetDesc(content)
     end)
 end
 
 -- ========================================================
--- PLAYER ESP SYSTEM
+-- PLAYER ESP SYSTEM (FIXED & REALTIME)
 -- ========================================================
 local ESPEnabled = false
 local ESPFolder = Instance.new("Folder", Workspace)
@@ -121,8 +124,8 @@ local function UpdatePlayerESP()
                 local hl = Instance.new("Highlight")
                 hl.Name = "ESPHighlight"
                 hl.Adornee = char
-                hl.FillColor = Color3.fromRGB(15, 80, 35)
-                hl.OutlineColor = Color3.fromRGB(0, 255, 100)
+                hl.FillColor = Color3.fromRGB(20, 80, 20)   
+                hl.OutlineColor = Color3.fromRGB(50, 255, 50) 
                 hl.FillTransparency = 0.4
                 hl.OutlineTransparency = 0
                 hl.Parent = ESPFolder
@@ -139,7 +142,7 @@ local function UpdatePlayerESP()
                 textLabel.Size = UDim2.new(1, 0, 0, 25)
                 textLabel.BackgroundTransparency = 1
                 textLabel.Text = player.Name
-                textLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+                textLabel.TextColor3 = Color3.fromRGB(50, 255, 50)
                 textLabel.TextSize = 14
                 textLabel.Font = Enum.Font.SourceSansBold
                 textLabel.TextStrokeTransparency = 0
@@ -162,7 +165,7 @@ local function UpdatePlayerESP()
                 local healthBarFill = Instance.new("Frame")
                 healthBarFill.Name = "HealthBarFill"
                 healthBarFill.Size = UDim2.new(healthPercent, 0, 1, 0)
-                healthBarFill.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+                healthBarFill.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
                 healthBarFill.BorderSizePixel = 0
                 healthBarFill.Parent = healthBarBg
                 
@@ -213,147 +216,171 @@ local function GetTarget()
 end
 
 -- ========================================================
--- RAYFIELD UI ELEMENTS (TRANG TRÍ ĐẸP MẮT)
+-- WINDUI ELEMENTS (COMBAT TAB)
 -- ========================================================
-Tabs.Combat:CreateSection("🔥 Hệ Thống Tấn Công Tự Động")
-
-Tabs.Combat:CreateToggle({
-   Name = "Auto Kill (Bám Sát & Cắn 10s - Né 2s)",
-   CurrentValue = false,
-   Flag = "AutoKillToggle",
-   Icon = "swords",
-   Callback = function(Value)
-      AutoKillActive = Value
-      CombatState = 1
-      StateTimer = 0
-      LockedTarget = nil
-   end,
+Tabs.Combat:Paragraph({
+    Title = "🔥 HỆ THỐNG TẤT CÔNG & SĂN MỒI",
+    Desc = "• Bám sát mục tiêu thông minh\n• Cắn liên tục 10s & né tránh mượt mà 2s lên không trung."
 })
 
-Tabs.Combat:CreateSection("🛡️ Phòng Thủ, Tốc Độ & Camera")
-
-Tabs.Combat:CreateToggle({
-   Name = "Anti-Shake Camera (Chống Rung Màn Hình)",
-   CurrentValue = false,
-   Flag = "AntiShakeToggle",
-   Icon = "camera-off",
-   Callback = function(Value)
-      AntiShakeCameraActive = Value
-      LockedCameraPosition = nil
-   end,
-})
-
-Tabs.Combat:CreateToggle({
-   Name = "Auto Dodge (Tự Động Né Đòn Khi Mất Máu)",
-   CurrentValue = false,
-   Flag = "AutoDodgeToggle",
-   Icon = "shield-alert",
-   Callback = function(Value)
-      AutoDodgeActive = Value
-   end,
-})
-
-Tabs.Combat:CreateSlider({
-   Name = "Bite / Orbit Distance (Khoảng cách cắn)",
-   Range = {0, 100},
-   Increment = 1,
-   CurrentValue = 2,
-   Flag = "OrbitRadiusSlider",
-   Icon = "orbit",
-   Callback = function(Value)
-      OrbitRadius = Value
-   end,
-})
-
-Tabs.Combat:CreateSlider({
-   Name = "Combat & Movement Speed (Tốc độ di chuyển)",
-   Range = {0, 1000},
-   Increment = 10,
-   CurrentValue = 100,
-   Flag = "CustomSpeedSlider",
-   Icon = "gauge",
-   Callback = function(Value)
-      CustomSpeed = Value
-   end,
-})
-
-Tabs.Combat:CreateToggle({
-   Name = "Emergency Low-HP Escape (Bay Khẩn Cấp <25% Máu)",
-   CurrentValue = false,
-   Flag = "EmergencyEscapeToggle",
-   Icon = "heart-pulse",
-   Callback = function(Value)
-      EmergencyEscapeActive = Value
-      IsDodging = false
-   end,
-})
-
--- TAB AUTO FARM
-Tabs.Farm:CreateSection("⚡ Điều Khiển Lộ Trình Farm Tự Động")
-Tabs.Farm:CreateToggle({
-   Name = "🚀 Bật/Tắt Auto Farm Route (Ưu Tiên Tuyệt Đối)",
-   CurrentValue = false,
-   Flag = "AutoFarmToggle",
-   Icon = "map-pin",
-   Callback = function(Value)
-       IsAutoFarmRunning = Value
-       if Value then
-           farmIndex = 1
-           farmTimer = tick()
-           Rayfield:Notify({Title = "🌟 Auto Farm Đã Bật", Content = "Đang chạy lộ trình 9 điểm (Combat tạm dừng).", Duration = 2})
-       else
-           Rayfield:Notify({Title = "🛑 Auto Farm Đã Tắt", Content = "Hệ thống Combat đã khả dụng trở lại.", Duration = 2})
-       end
-       UpdateFarmStatus()
-   end,
-})
-
-FarmParagraph = Tabs.Farm:CreateParagraph({
-    Title = "📊 Tiến Độ Lộ Trình Farm", 
-    Content = "Bấm bật công tắc phía trên để bắt đầu hành trình tự động dịch chuyển qua 9 điểm."
-})
-
--- TAB PLAYER & ESP
-Tabs.Player:CreateSection("👁️ Tầm Nhìn & Hiển Thị Thông Minh")
-
-Tabs.Player:CreateToggle({
-   Name = "Player ESP (Nhìn Xuyên Tường & Thanh Máu)",
-   CurrentValue = false,
-   Flag = "ESP_EN",
-   Icon = "scan-eye",
-   Callback = function(Value)
-      ESPEnabled = Value
-      if not ESPEnabled then
-          ClearESP()
-      end
-   end,
-})
-
-task.spawn(function()
-    while true do
-        if ESPEnabled then
-            pcall(UpdatePlayerESP)
-        end
-        task.wait(0.5)
+Tabs.Combat:Toggle({
+    Title = "⚡ Auto Kill (Bám Sát & Cắn 10s - Né 2s)",
+    Default = false,
+    Callback = function(Value)
+        AutoKillActive = Value
+        CombatState = 1
+        StateTimer = 0
+        LockedTarget = nil
     end
-end)
+})
+
+Tabs.Combat:Divider()
+
+Tabs.Combat:Toggle({
+    Title = "🛡️ Anti-Shake Camera (Chống Rung Màn Hình)",
+    Default = false,
+    Callback = function(Value)
+        AntiShakeCameraActive = Value
+        LockedCameraPosition = nil
+    end
+})
+
+Tabs.Combat:Toggle({
+    Title = "🏃 Auto Dodge (Tự Né Khi Player Khác Áp Sát Tấn Công)",
+    Default = false,
+    Callback = function(Value)
+        AutoDodgeActive = Value
+    end
+})
+
+Tabs.Combat:Slider({
+    Title = "🎯 Bite / Orbit Distance (Khoảng cách cắn)",
+    Step = 0.1,
+    Value = { Min = 0, Max = 100, Default = 2 },
+    Callback = function(Value)
+        OrbitRadius = Value
+    end
+})
+
+Tabs.Combat:Toggle({
+    Title = "🚨 Emergency Low-HP Escape (<25% Máu)",
+    Default = false,
+    Callback = function(Value)
+        EmergencyEscapeActive = Value
+        IsDodging = false
+    end
+})
+
+-- ========================================================
+-- WINDUI ELEMENTS (AUTO FARM TAB)
+-- ========================================================
+Tabs.Farm:Paragraph({
+    Title = "🌟 LỘ TRÌNH FARM TỰ ĐỘNG (9 TỌA ĐỘ)",
+    Desc = "Tự động dịch chuyển qua các khu vực nguyên thủy giúp cày cuốc cực nhanh."
+})
+
+Tabs.Farm:Toggle({
+    Title = "🚀 Bật/Tắt Auto Farm Route (9 Điểm)",
+    Default = false,
+    Callback = function(Value)
+        IsAutoFarmRunning = Value
+        if Value then
+            farmIndex = 1
+            farmTimer = tick()
+            WindUI:Notify({Title = "🌟 Auto Farm Đã Bật", Content = "Đang chạy lộ trình 9 điểm tự động.", Duration = 2})
+        else
+            WindUI:Notify({Title = "🛑 Auto Farm Đã Tắt", Content = "Đã trả lại quyền kiểm soát Combat.", Duration = 2})
+        end
+        UpdateFarmStatus()
+    end
+})
+
+FarmParagraph = Tabs.Farm:Paragraph({
+    Title = "📊 Tiến Độ Lộ Trình Hiện Tại",
+    Desc = "• Trạng thái: 🔴 ĐANG TẮT\n• Bấm bật công tắc phía trên để bắt đầu."
+})
+
+-- ========================================================
+-- WINDUI ELEMENTS (PLAYER & ESP TAB)
+-- ========================================================
+Tabs.Player:Paragraph({
+    Title = "👁️ HỆ THỐNG ESP & TẦM NHÌN",
+    Desc = "Hiển thị khung sáng xuyên tường và thanh máu thời gian thực của người chơi khác."
+})
+
+Tabs.Player:Toggle({
+    Title = "👀 Player ESP (Xuyên Tường & Máu)",
+    Default = false,
+    Callback = function(Value)
+        ESPEnabled = Value
+        if not ESPEnabled then
+            ClearESP()
+        end
+    end
+})
+
+-- ========================================================
+-- SETTINGS TAB (SPEED, JUMP & FLY GUI)
+-- ========================================================
+Tabs.Settings:Slider({
+    Title = "🚀 WalkSpeed (Tốc độ chạy)",
+    Step = 1,
+    Value = { Min = 16, Max = 1000, Default = 16 },
+    Callback = function(Value)
+        CustomSpeed = Value
+    end
+})
+
+Tabs.Settings:Slider({
+    Title = "🦘 JumpPower (Độ cao nhảy)",
+    Step = 1,
+    Value = { Min = 0, Max = 200, Default = 50 },
+    Callback = function(Value)
+        CustomJumpPower = Value
+    end
+})
+
+Tabs.Settings:Divider()
+
+Tabs.Settings:Button({
+    Title = "🦅 Bật Fly GUI V4",
+    Callback = function()
+        pcall(function()
+            loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Better-Fly-GUI-44304"))()
+        end)
+        WindUI:Notify({Title = "Fly GUI", Content = "Đã kích hoạt Fly GUI V4!", Duration = 3})
+    end
+})
+
+-- Biến đếm để tối ưu hóa tần suất làm mới ESP
+local ESPUpdateTimer = 0
 
 -- ========================================================
 -- MAIN LOOP (TÁCH BIỆT RÕ RÀNG AN TOÀN)
 -- ========================================================
-RunService.RenderStepped:Connect(function()
+RunService.RenderStepped:Connect(function(dt)
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     local humanoid = char and char:FindFirstChildOfClass("Humanoid")
     
+    -- CẬP NHẬT ESP LIÊN TỤC TRONG LOOP
+    if ESPEnabled then
+        ESPUpdateTimer = ESPUpdateTimer + dt
+        if ESPUpdateTimer >= 0.3 then
+            ESPUpdateTimer = 0
+            UpdatePlayerESP()
+        end
+    end
+
     if hrp and humanoid then
         pcall(function()
             humanoid.WalkSpeed = CustomSpeed
+            humanoid.JumpPower = CustomJumpPower
         end)
         
         local currentTime = tick()
         
-        -- HỆ THỐNG CHỐNG RUNG CAMERA (Chạy xuyên suốt mượt mà)
+        -- HỆ THỐNG CHỐNG RUNG CAMERA
         if AntiShakeCameraActive then
             local currentCamCF = Camera.CFrame
             if not LockedCameraPosition then
@@ -366,7 +393,7 @@ RunService.RenderStepped:Connect(function()
             LockedCameraPosition = nil
         end
         
-        -- NHÁNH 1: NẾU BẬT AUTO FARM -> CHỈ CHẠY LỘ TRÌNH 9 ĐIỂM, KHÔNG ĐÁNH
+        -- NHÁNH 1: AUTO FARM ROUTE (9 ĐIỂM)
         if IsAutoFarmRunning then
             local targetPos = FarmPoints[farmIndex]
             hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
@@ -382,20 +409,31 @@ RunService.RenderStepped:Connect(function()
             return 
         end
         
-        -- NHÁNH 2: NẾU TẮT AUTO FARM -> KÍCH HOẠT HỆ THỐNG COMBAT & DEFENSE
+        -- NHÁNH 2: COMBAT & DEFENSE
         local currentTarget = GetTarget()
-        local currentHealth = humanoid.Health
         
-        if AutoDodgeActive and currentHealth < LastHealth and currentTarget and not IsDodging and (currentTime - DodgeCooldown > 1.5) then
-            IsDodging = true
-            DodgeTimer = currentTime
-            DodgeCooldown = currentTime
+        if AutoDodgeActive and not IsDodging and (currentTime - DodgeCooldown > 1.2) then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local pTargetHrp = player.Character:FindFirstChild("HumanoidRootPart")
+                    local pTargetHum = player.Character:FindFirstChildOfClass("Humanoid")
+                    if pTargetHrp and pTargetHum and pTargetHum.Health > 0 then
+                        local distance = (hrp.Position - pTargetHrp.Position).Magnitude
+                        if distance <= ThreatDistance then
+                            IsDodging = true
+                            DodgeTimer = currentTime
+                            DodgeCooldown = currentTime
+                            break
+                        end
+                    end
+                end
+            end
         end
-        LastHealth = currentHealth
         
-        -- 2.1: AUTO DODGE
-        if IsDodging and currentTarget then
-            local dodgePos = currentTarget.Position + Vector3.new(0, SafeHeight, 0)
+        -- 2.1: AUTO DODGE (Né lên cao khi bị áp sát tấn công)
+        if IsDodging then
+            local escapeRefPos = currentTarget and currentTarget.Position or hrp.Position
+            local dodgePos = escapeRefPos + Vector3.new(0, SafeHeight, 0)
             hrp.CFrame = CFrame.new(dodgePos, hrp.Position + hrp.CFrame.LookVector)
             hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
             
@@ -422,7 +460,7 @@ RunService.RenderStepped:Connect(function()
                     StateTimer = currentTime
                 end
                 
-                OrbitAngle = OrbitAngle + (OrbitSpeed * RunService.RenderStepped:Wait())
+                OrbitAngle = OrbitAngle + (OrbitSpeed * dt)
                 
                 local targetVelocity = currentTarget.AssemblyLinearVelocity or Vector3.new(0,0,0)
                 local predictedPos = currentTarget.Position + (targetVelocity * 0.04)
