@@ -1,25 +1,25 @@
 -- ========================================================
--- PRIMEVAL EARTH | WINDUI (FOREST HUB ON TOP)
+-- PRIMEVAL EARTH | WINDUI (FORESTHUB ON TOP - FARM 10.5S)
 -- ========================================================
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
 local Window = WindUI:CreateWindow({
-    Title = "🦖 Primeval Earth | 🌟 ForestHUB",
+    Title = "🦖 Primeval Earth | 🌟 ForestHUB On Top",
     Icon = "trees",
-    Author = "ForestHUB On Top",
+    Author = "✨ Official Team Forest ✨",
     Folder = "ForestHubConfigs",
     Size = UDim2.fromOffset(580, 460),
     Transparent = true,
-    Theme = "Plant", -- Tông màu Xanh lá chủ đạo
+    Theme = "Plant", -- Tông màu Xanh lá chủ đạo siêu đẹp
     SideBarWidth = 160,
     HasOutline = true
 })
 
 WindUI:Notify({
     Title = "🦖 ForestHUB Đã Khởi Động!",
-    Content = "✨ Đã cập nhật tiêu đề thành công.",
-    Duration = 4
+    Content = "✨ Đã cập nhật thời gian Auto Farm thành 10.5 giây!",
+    Duration = 5
 })
 
 local Tabs = {
@@ -61,7 +61,7 @@ local OrbitAngle = 0
 -- Target Lock Variables
 local LockedTarget = nil
 
--- Auto Dodge Variables (Cơ chế né khi có người áp sát tấn công)
+-- Auto Dodge Variables
 local IsDodging = false
 local DodgeTimer = 0
 local DodgeCooldown = 0
@@ -91,7 +91,7 @@ local FarmParagraph = nil
 local function UpdateFarmStatus()
     if not FarmParagraph then return end
     local statusText = IsAutoFarmRunning and "🟢 ĐANG CHẠY LỘ TRÌNH (9 Điểm)" or "🔴 ĐANG TẮT"
-    local content = string.format("• Trạng thái: %s\n• Đang ở điểm số: %d / %d\n\n✨ Hệ thống dịch chuyển mượt mà, đứng chờ 10s mỗi điểm.", statusText, farmIndex, #FarmPoints)
+    local content = string.format("• Trạng thái: %s\n• Đang ở điểm số: %d / %d\n\n✨ Hệ thống dịch chuyển mượt mà, đứng chờ 10.5s mỗi điểm.", statusText, farmIndex, #FarmPoints)
     pcall(function()
         FarmParagraph:SetDesc(content)
     end)
@@ -231,6 +231,7 @@ Tabs.Combat:Toggle({
         CombatState = 1
         StateTimer = 0
         LockedTarget = nil
+        WindUI:Notify({Title = "⚡ Auto Kill", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
     end
 })
 
@@ -246,10 +247,11 @@ Tabs.Combat:Toggle({
 })
 
 Tabs.Combat:Toggle({
-    Title = "🏃 Auto Dodge (Tự Né Khi Player Khác Áp Sát Tấn Công)",
+    Title = "🏃 Auto Dodge (Tự Né Khi Player Khác Áp Sát)",
     Default = false,
     Callback = function(Value)
         AutoDodgeActive = Value
+        WindUI:Notify({Title = "🏃 Auto Dodge", Content = Value and "Đã Bật chế độ tự né!" or "Đã Tắt!", Duration = 2})
     end
 })
 
@@ -316,12 +318,18 @@ Tabs.Player:Toggle({
         if not ESPEnabled then
             ClearESP()
         end
+        WindUI:Notify({Title = "👀 Player ESP", Content = Value and "Đã bật xuyên tường!" or "Đã tắt xuyên tường!", Duration = 2})
     end
 })
 
 -- ========================================================
 -- SETTINGS TAB (SPEED, JUMP & FLY GUI)
 -- ========================================================
+Tabs.Settings:Paragraph({
+    Title = "⚙️ CÀI ĐẶT NHÂN VẬT & TIỆN ÍCH",
+    Desc = "Tùy chỉnh tốc độ, độ cao nhảy và các tập lệnh hỗ trợ bay lượn."
+})
+
 Tabs.Settings:Slider({
     Title = "🚀 WalkSpeed (Tốc độ chạy)",
     Step = 1,
@@ -348,7 +356,7 @@ Tabs.Settings:Button({
         pcall(function()
             loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Better-Fly-GUI-44304"))()
         end)
-        WindUI:Notify({Title = "Fly GUI", Content = "Đã kích hoạt Fly GUI V4!", Duration = 3})
+        WindUI:Notify({Title = "✨ Fly GUI", Content = "Đã kích hoạt Fly GUI V4 thành công!", Duration = 3})
     end
 })
 
@@ -393,13 +401,13 @@ RunService.RenderStepped:Connect(function(dt)
             LockedCameraPosition = nil
         end
         
-        -- NHÁNH 1: AUTO FARM ROUTE (9 ĐIỂM)
+        -- NHÁNH 1: AUTO FARM ROUTE (9 ĐIỂM - CHỜ 10.5S)
         if IsAutoFarmRunning then
             local targetPos = FarmPoints[farmIndex]
             hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
             hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
             
-            if currentTime - farmTimer >= 10.0 then
+            if currentTime - farmTimer >= 10.5 then
                 farmIndex = farmIndex + 1
                 if farmIndex > #FarmPoints then farmIndex = 1 end
                 farmTimer = currentTime
