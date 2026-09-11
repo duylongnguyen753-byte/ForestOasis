@@ -1,5 +1,5 @@
 -- ========================================================
--- PRIMEVAL EARTH | WINDUI (FORESTHUB - FIXED AUTO TARGET KILL)
+-- PRIMEVAL EARTH | WINDUI (FORESTHUB - CLEAN AUTO FARM UI)
 -- ========================================================
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
@@ -18,7 +18,7 @@ local Window = WindUI:CreateWindow({
 
 WindUI:Notify({
     Title = "🦖 ForestHUB Đã Khởi Động!",
-    Content = "✨ Đã sửa và tối ưu tính năng Auto Target Kill!",
+    Content = "✨ Đã cập nhật giao diện Auto Farm gọn gàng!",
     Duration = 5
 })
 
@@ -92,7 +92,7 @@ local FarmParagraph = nil
 
 local function UpdateFarmStatus()
     if not FarmParagraph then return end
-    local statusText = IsAutoFarmRunning and "🟢 ĐANG CHẠY LỘ TRÌNH (9 Điểm)" or "🔴 ĐANG TẮT"
+    local statusText = IsAutoFarmRunning and "🟢 ĐANG CHẠY LỘ TRÌNH" or "🔴 ĐANG TẮT"
     local content = string.format("• Trạng thái: %s\n• Đang ở điểm số: %d / %d\n\n✨ Hệ thống dịch chuyển mượt mà, đứng chờ 10.5s mỗi điểm.", statusText, farmIndex, #FarmPoints)
     pcall(function()
         FarmParagraph:SetDesc(content)
@@ -217,7 +217,6 @@ local function GetTarget()
     return LockedTarget
 end
 
--- Lấy trực tiếp HumanoidRootPart của đúng người chơi được chọn trong danh sách
 local function GetSelectedPlayerTargetHRP()
     if not SelectedTargetPlayerName or SelectedTargetPlayerName == "" or SelectedTargetPlayerName == "Không có ai khác" then
         return nil
@@ -264,7 +263,6 @@ Tabs.Combat:Slider({
 
 Tabs.Combat:Divider()
 
--- PHẦN CHỌN PLAYER VÀ TELEPORT / AUTO TARGET KILL RIÊNG BIỆT
 Tabs.Combat:Paragraph({
     Title = "🎯 DỊCH CHUYỂN & CHỌN MỤC TIÊU RIÊNG",
     Desc = "Chọn đúng tên người chơi bạn muốn truy sát bên dưới."
@@ -371,22 +369,22 @@ Tabs.Combat:Toggle({
 })
 
 -- ========================================================
--- WINDUI ELEMENTS (AUTO FARM TAB)
+-- WINDUI ELEMENTS (AUTO FARM TAB - UPDATED CLEAN TEXT)
 -- ========================================================
 Tabs.Farm:Paragraph({
-    Title = "🌟 LỘ TRÌNH FARM TỰ ĐỘNG (9 TỌA ĐỘ)",
+    Title = "🌟 LỘ TRÌNH FARM TỰ ĐỘNG",
     Desc = "Tự động dịch chuyển qua các khu vực nguyên thủy giúp cày cuốc cực nhanh."
 })
 
 Tabs.Farm:Toggle({
-    Title = "🚀 Bật/Tắt Auto Farm Route (9 Điểm)",
+    Title = "🚀 Bật/Tắt Auto Farm Route",
     Default = false,
     Callback = function(Value)
         IsAutoFarmRunning = Value
         if Value then
             farmIndex = 1
             farmTimer = tick()
-            WindUI:Notify({Title = "🌟 Auto Farm Đã Bật", Content = "Đang chạy lộ trình 9 điểm tự động.", Duration = 2})
+            WindUI:Notify({Title = "🌟 Auto Farm Đã Bật", Content = "Đang chạy lộ trình tự động.", Duration = 2})
         else
             WindUI:Notify({Title = "🛑 Auto Farm Đã Tắt", Content = "Đã trả lại quyền kiểm soát Combat.", Duration = 2})
         end
@@ -420,7 +418,7 @@ Tabs.Player:Toggle({
 })
 
 -- ========================================================
--- SETTINGS TAB (SPEED, JUMP & FLY GUI)
+-- SETTINGS TAB
 -- ========================================================
 Tabs.Settings:Paragraph({
     Title = "⚙️ CÀI ĐẶT NHÂN VẬT & TIỆN ÍCH",
@@ -457,7 +455,6 @@ Tabs.Settings:Button({
     end
 })
 
--- Biến đếm để tối ưu hóa tần suất làm mới ESP
 local ESPUpdateTimer = 0
 
 -- ========================================================
@@ -468,7 +465,6 @@ RunService.RenderStepped:Connect(function(dt)
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     local humanoid = char and char:FindFirstChildOfClass("Humanoid")
     
-    -- CẬP NHẬT ESP LIÊN TỤC TRONG LOOP
     if ESPEnabled then
         ESPUpdateTimer = ESPUpdateTimer + dt
         if ESPUpdateTimer >= 0.3 then
@@ -485,7 +481,6 @@ RunService.RenderStepped:Connect(function(dt)
         
         local currentTime = tick()
         
-        -- HỆ THỐNG CHỐNG RUNG CAMERA
         if AntiShakeCameraActive then
             local currentCamCF = Camera.CFrame
             if not LockedCameraPosition then
@@ -498,7 +493,6 @@ RunService.RenderStepped:Connect(function(dt)
             LockedCameraPosition = nil
         end
         
-        -- NHÁNH 1: AUTO FARM ROUTE
         if IsAutoFarmRunning then
             local targetPos = FarmPoints[farmIndex]
             hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
@@ -514,7 +508,6 @@ RunService.RenderStepped:Connect(function(dt)
             return 
         end
         
-        -- NHÁNH 2: AUTO TARGET KILL (CHỈ TIÊU DIỆT ĐÚNG MỤC TIÊU ĐƯỢC CHỌN)
         if AutoTargetKillActive then
             local targetHrp = GetSelectedPlayerTargetHRP()
             if targetHrp then
@@ -529,7 +522,6 @@ RunService.RenderStepped:Connect(function(dt)
                 hrp.CFrame = CFrame.new(strictLockPos, targetHrp.Position)
                 hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 
-                -- Spam cắn liên tục người chơi đó
                 if currentTime - LastAttackTick >= 0.05 then
                     LastAttackTick = currentTime
                     pcall(function()
@@ -538,11 +530,10 @@ RunService.RenderStepped:Connect(function(dt)
                         VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
                     end)
                 end
-                return -- Chặn không cho chạy các lệnh combat khác khi đang focus mục tiêu này
+                return
             end
         end
 
-        -- NHÁNH 3: AUTO KILL THƯỜNG & DEFENSE
         local currentTarget = GetTarget()
         
         if AutoDodgeActive and not IsDodging and (currentTime - DodgeCooldown > 1.2) then
