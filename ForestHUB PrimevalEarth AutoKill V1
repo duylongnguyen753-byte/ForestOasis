@@ -5,7 +5,7 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "🦖 Primeval Earth | ForestHUB v2.0",
+   Name = "🦖 Primeval Earth | ForestHUB",
    LoadingTitle = "🌲 ForestHUB Loading...",
    LoadingSubtitle = "By Team Forest - Optimized for Delta",
    ConfigurationSaving = {
@@ -22,8 +22,9 @@ local Window = Rayfield:CreateWindow({
 })
 
 local Tabs = {
-    Combat = Window:CreateTab("⚔️ Combat Hub", 4483362458),
-    Player = Window:CreateTab("🛡️ Player & ESP", 4483362458)
+    Combat = Window:CreateTab("⚔️ Combat Hub", "swords"),
+    Farm = Window:CreateTab("🌾 Auto Farm Route", "map"),
+    Player = Window:CreateTab("🛡️ Player & ESP", "eye")
 }
 
 local Players = game:GetService("Players")
@@ -38,6 +39,7 @@ local AutoKillActive = false
 local AutoDodgeActive = false
 local EmergencyEscapeActive = false
 local AntiShakeCameraActive = false
+local IsAutoFarmRunning = false
 
 -- Combat & Timing Configuration (Attack 10s - Escape 2s)
 local SafeHeight = 140       
@@ -62,8 +64,33 @@ local IsDodging = false
 local DodgeTimer = 0
 local DodgeCooldown = 0
 
--- Biến khóa cứng vị trí camera với độ mượt ổn định
+-- Camera Variables
 local LockedCameraPosition = nil
+
+-- ========================================================
+-- AUTO FARM ROUTE CONFIG
+-- ========================================================
+local FarmPoints = {
+    Vector3.new(1446.5, 77.1, -677.8),
+    Vector3.new(273.3, 74.4, -1028.7),
+    Vector3.new(-617.3, 146.4, -1127.9),
+    Vector3.new(-510.2, 77.7, -430.4),
+    Vector3.new(-166.4, 110.4, 391.5),
+    Vector3.new(1086.6, 70.4, 463.8),
+    Vector3.new(-171.2, 110.4, 388.3)
+}
+local farmIndex = 1
+local farmTimer = 0
+local FarmParagraph = nil
+
+local function UpdateFarmStatus()
+    if not FarmParagraph then return end
+    local statusText = IsAutoFarmRunning and "Đang Chạy 🟢" or "Đang Tắt 🔴"
+    local content = string.format("Trạng thái hệ thống: %s\n📍 Đang ở điểm lộ trình: %d / %d\n\n✨ Cơ chế: Dịch chuyển thông minh, đứng chờ 10 giây mỗi điểm và hoàn toàn KHÔNG đánh nhau khi đang chạy lộ trình.", statusText, farmIndex, #FarmPoints)
+    pcall(function()
+        FarmParagraph:Set({Title = "📊 Tiến Độ Lộ Trình Farm", Content = content})
+    end)
+end
 
 -- ========================================================
 -- PLAYER ESP SYSTEM
@@ -184,12 +211,12 @@ local function GetTarget()
 end
 
 -- ========================================================
--- RAYFIELD UI ELEMENTS
+-- RAYFIELD UI ELEMENTS (TRANG TRÍ ĐẸP MẮT)
 -- ========================================================
-Tabs.Combat:CreateSection("🔥 Main Attack System")
+Tabs.Combat:CreateSection("🔥 Hệ Thống Tấn Công Tự Động")
 
 Tabs.Combat:CreateToggle({
-   Name = "Auto Kill (Bám & Cắn Tự Động)",
+   Name = "Auto Kill (Bám Sát & Cắn 10s - Né 2s)",
    CurrentValue = false,
    Flag = "AutoKillToggle",
    Icon = "swords",
@@ -201,7 +228,7 @@ Tabs.Combat:CreateToggle({
    end,
 })
 
-Tabs.Combat:CreateSection("🛡️ Defense, Camera & Adjustments")
+Tabs.Combat:CreateSection("🛡️ Phòng Thủ, Tốc Độ & Camera")
 
 Tabs.Combat:CreateToggle({
    Name = "Anti-Shake Camera (Chống Rung Màn Hình)",
@@ -237,7 +264,7 @@ Tabs.Combat:CreateSlider({
 })
 
 Tabs.Combat:CreateSlider({
-   Name = "Combat & Movement Speed (Tốc độ)",
+   Name = "Combat & Movement Speed (Tốc độ di chuyển)",
    Range = {0, 1000},
    Increment = 10,
    CurrentValue = 100,
@@ -249,7 +276,7 @@ Tabs.Combat:CreateSlider({
 })
 
 Tabs.Combat:CreateToggle({
-   Name = "Emergency Low-HP Escape (Bay khẩn cấp <25%)",
+   Name = "Emergency Low-HP Escape (Bay Khẩn Cấp <25% Máu)",
    CurrentValue = false,
    Flag = "EmergencyEscapeToggle",
    Icon = "heart-pulse",
@@ -259,10 +286,36 @@ Tabs.Combat:CreateToggle({
    end,
 })
 
-Tabs.Player:CreateSection("👁️ Vision & Visuals")
+-- TAB AUTO FARM
+Tabs.Farm:CreateSection("⚡ Điều Khiển Lộ Trình Farm Tự Động")
+Tabs.Farm:CreateToggle({
+   Name = "🚀 Bật/Tắt Auto Farm Route (Ưu Tiên Tuyệt Đối)",
+   CurrentValue = false,
+   Flag = "AutoFarmToggle",
+   Icon = "map-pin",
+   Callback = function(Value)
+       IsAutoFarmRunning = Value
+       if Value then
+           farmIndex = 1
+           farmTimer = tick()
+           Rayfield:Notify({Title = "🌟 Auto Farm Đã Bật", Content = "Đang bắt đầu lộ trình 7 điểm (Combat tạm dừng).", Duration = 2})
+       else
+           Rayfield:Notify({Title = "🛑 Auto Farm Đã Tắt", Content = "Hệ thống Combat đã khả dụng trở lại.", Duration = 2})
+       end
+       UpdateFarmStatus()
+   end,
+})
+
+FarmParagraph = Tabs.Farm:CreateParagraph({
+    Title = "📊 Tiến Độ Lộ Trình Farm", 
+    Content = "Bấm bật công tắc phía trên để bắt đầu hành trình tự động dịch chuyển qua 7 điểm."
+})
+
+-- TAB PLAYER & ESP
+Tabs.Player:CreateSection("👁️ Tầm Nhìn & Hiển Thị Thông Minh")
 
 Tabs.Player:CreateToggle({
-   Name = "Player ESP (Nhìn Xuyên Tường, Hiển Thị Máu)",
+   Name = "Player ESP (Nhìn Xuyên Tường & Thanh Máu)",
    CurrentValue = false,
    Flag = "ESP_EN",
    Icon = "scan-eye",
@@ -284,7 +337,7 @@ task.spawn(function()
 end)
 
 -- ========================================================
--- MAIN COMBAT, CAMERA & AUTO DODGE LOOP
+-- MAIN LOOP (TÁCH BIỆT RÕ RÀNG AN TOÀN)
 -- ========================================================
 RunService.RenderStepped:Connect(function()
     local char = LocalPlayer.Character
@@ -296,10 +349,9 @@ RunService.RenderStepped:Connect(function()
             humanoid.WalkSpeed = CustomSpeed
         end)
         
-        local currentTarget = GetTarget()
         local currentTime = tick()
         
-        -- HỆ THỐNG CHỐNG RUNG (Ổn định mượt mà)
+        -- HỆ THỐNG CHỐNG RUNG CAMERA (Chạy xuyên suốt mượt mà)
         if AntiShakeCameraActive then
             local currentCamCF = Camera.CFrame
             if not LockedCameraPosition then
@@ -312,7 +364,26 @@ RunService.RenderStepped:Connect(function()
             LockedCameraPosition = nil
         end
         
+        -- NHÁNH 1: NẾU BẬT AUTO FARM -> CHỈ CHẠY LỘ TRÌNH, KHÔNG ĐÁNH
+        if IsAutoFarmRunning then
+            local targetPos = FarmPoints[farmIndex]
+            hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
+            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            
+            if currentTime - farmTimer >= 10.0 then
+                farmIndex = farmIndex + 1
+                if farmIndex > #FarmPoints then farmIndex = 1 end
+                farmTimer = currentTime
+                UpdateFarmStatus()
+            end
+            
+            return 
+        end
+        
+        -- NHÁNH 2: NẾU TẮT AUTO FARM -> KÍCH HOẠT HỆ THỐNG COMBAT & DEFENSE
+        local currentTarget = GetTarget()
         local currentHealth = humanoid.Health
+        
         if AutoDodgeActive and currentHealth < LastHealth and currentTarget and not IsDodging and (currentTime - DodgeCooldown > 1.5) then
             IsDodging = true
             DodgeTimer = currentTime
@@ -320,7 +391,7 @@ RunService.RenderStepped:Connect(function()
         end
         LastHealth = currentHealth
         
-        -- 1. AUTO DODGE
+        -- 2.1: AUTO DODGE
         if IsDodging and currentTarget then
             local dodgePos = currentTarget.Position + Vector3.new(0, SafeHeight, 0)
             hrp.CFrame = CFrame.new(dodgePos, hrp.Position + hrp.CFrame.LookVector)
@@ -334,7 +405,7 @@ RunService.RenderStepped:Connect(function()
             return
         end
         
-        -- 2. EMERGENCY ESCAPE
+        -- 2.2: EMERGENCY ESCAPE
         if EmergencyEscapeActive and humanoid.Health > 0 and (humanoid.Health / humanoid.MaxHealth) < 0.25 and currentTarget then
             local emergencyPos = currentTarget.Position + Vector3.new(0, SafeHeight + 50, 0)
             hrp.CFrame = CFrame.new(emergencyPos, hrp.Position + hrp.CFrame.LookVector)
@@ -342,7 +413,7 @@ RunService.RenderStepped:Connect(function()
             return
         end
         
-        -- 3. COMBAT ORBIT (10s cắn, 2s bay lên trốn)
+        -- 2.3: AUTO KILL (10s Cắn, 2s Né Lên Cao)
         if AutoKillActive and currentTarget then
             if CombatState == 1 then
                 if StateTimer == 0 then
