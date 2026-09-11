@@ -1,5 +1,5 @@
 -- ========================================================
--- PRIMEVAL EARTH | WINDUI (FORESTHUB ON TOP - FARM 10.5S)
+-- PRIMEVAL EARTH | WINDUI (FORESTHUB ON TOP - FIXED SPELLING)
 -- ========================================================
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
@@ -18,7 +18,7 @@ local Window = WindUI:CreateWindow({
 
 WindUI:Notify({
     Title = "🦖 ForestHUB Đã Khởi Động!",
-    Content = "✨ Đã cập nhật thời gian Auto Farm thành 10.5 giây!",
+    Content = "✨ Đã sửa lỗi chính tả thành công!",
     Duration = 5
 })
 
@@ -58,8 +58,9 @@ local StateTimer = 0
 local LastAttackTick = 0
 local OrbitAngle = 0
 
--- Target Lock Variables
+-- Target Lock & Teleport Variables
 local LockedTarget = nil
+local SelectedTargetPlayerName = nil
 
 -- Auto Dodge Variables
 local IsDodging = false
@@ -219,7 +220,7 @@ end
 -- WINDUI ELEMENTS (COMBAT TAB)
 -- ========================================================
 Tabs.Combat:Paragraph({
-    Title = "🔥 HỆ THỐNG TẤT CÔNG & SĂN MỒI",
+    Title = "🔥 HỆ THỐNG TẤN CÔNG & SĂN MỒI",
     Desc = "• Bám sát mục tiêu thông minh\n• Cắn liên tục 10s & né tránh mượt mà 2s lên không trung."
 })
 
@@ -232,6 +233,72 @@ Tabs.Combat:Toggle({
         StateTimer = 0
         LockedTarget = nil
         WindUI:Notify({Title = "⚡ Auto Kill", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
+    end
+})
+
+Tabs.Combat:Divider()
+
+-- PHẦN CHỌN PLAYER VÀ NÚT TELEPORT
+Tabs.Combat:Paragraph({
+    Title = "🎯 DỊCH CHUYỂN ĐẾN MỤC TIÊU (TELEPORT)",
+    Desc = "Chọn tên người chơi bên dưới và bấm nút để dịch chuyển tới vị trí của họ."
+})
+
+local PlayerListDropdown = nil
+local function GetPlayerNames()
+    local list = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            table.insert(list, p.Name)
+        end
+    end
+    if #list == 0 then table.insert(list, "Không có ai khác") end
+    return list
+end
+
+PlayerListDropdown = Tabs.Combat:Dropdown({
+    Title = "👥 Chọn Người Chơi",
+    Values = GetPlayerNames(),
+    Default = "",
+    Callback = function(Value)
+        SelectedTargetPlayerName = Value
+    end
+})
+
+Players.PlayerAdded:Connect(function()
+    pcall(function() PlayerListDropdown:SetValues(GetPlayerNames()) end)
+end)
+Players.PlayerRemoving:Connect(function()
+    pcall(function() PlayerListDropdown:SetValues(GetPlayerNames()) end)
+end)
+
+Tabs.Combat:Button({
+    Title = "🚀 Teleport Tới Người Chơi Đã Chọn",
+    Callback = function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then 
+            WindUI:Notify({Title = "❌ Lỗi", Content = "Nhân vật của bạn chưa sẵn sàng!", Duration = 2})
+            return
+        end
+        
+        if not SelectedTargetPlayerName or SelectedTargetPlayerName == "" or SelectedTargetPlayerName == "Không có ai khác" then
+            WindUI:Notify({Title = "⚠️ Chú ý", Content = "Vui lòng chọn một người chơi hợp lệ trước!", Duration = 2})
+            return
+        end
+        
+        local targetPlayer = Players:FindFirstChild(SelectedTargetPlayerName)
+        if targetPlayer and targetPlayer.Character then
+            local targetHrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if targetHrp then
+                hrp.CFrame = targetHrp.CFrame + Vector3.new(0, 3, 0)
+                WindUI:Notify({Title = "✨ Thành Công", Content = "Đã dịch chuyển tới: " .. targetPlayer.Name, Duration = 2})
+            else
+                WindUI:Notify({Title = "❌ Lỗi", Content = "Không tìm thấy thể xác của mục tiêu!", Duration = 2})
+            end
+        else
+        	WindUI:Notify({Title = "❌ Lỗi", Content = "Người chơi này đã rời game hoặc không tồn tại!", Duration = 2})
+        end
     end
 })
 
