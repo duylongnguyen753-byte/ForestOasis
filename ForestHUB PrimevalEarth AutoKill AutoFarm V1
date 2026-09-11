@@ -1,5 +1,5 @@
 -- ========================================================
--- PRIMEVAL EARTH | WINDUI (FORESTHUB - CLEAN AUTO FARM UI)
+-- PRIMEVAL EARTH | WINDUI (FORESTHUB - REFRESH PLAYER LIST)
 -- ========================================================
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
@@ -17,8 +17,8 @@ local Window = WindUI:CreateWindow({
 })
 
 WindUI:Notify({
-    Title = "🦖 ForestHUB Đã Khởi Động!",
-    Content = "✨ Đã cập nhật giao diện Auto Farm gọn gàng!",
+    Title = "🦖 ForestHUB Initialized!",
+    Content = "✨ Added player list refresh feature!",
     Duration = 5
 })
 
@@ -73,7 +73,7 @@ local ThreatDistance = 12.0
 local LockedCameraPosition = nil
 
 -- ========================================================
--- AUTO FARM ROUTE CONFIG (9 TỌA ĐỘ)
+-- AUTO FARM ROUTE CONFIG
 -- ========================================================
 local FarmPoints = {
     Vector3.new(1446.5, 77.1, -677.8),
@@ -100,7 +100,7 @@ local function UpdateFarmStatus()
 end
 
 -- ========================================================
--- PLAYER ESP SYSTEM (FIXED & REALTIME)
+-- PLAYER ESP SYSTEM
 -- ========================================================
 local ESPEnabled = false
 local ESPFolder = Instance.new("Folder", Workspace)
@@ -143,7 +143,7 @@ local function UpdatePlayerESP()
                 textLabel.Name = "NameTag"
                 textLabel.Size = UDim2.new(1, 0, 0, 25)
                 textLabel.BackgroundTransparency = 1
-                textLabel.Text = player.Name
+                textLabel.Text = player.Name .. " (" .. player.DisplayName .. ")"
                 textLabel.TextColor3 = Color3.fromRGB(50, 255, 50)
                 textLabel.TextSize = 14
                 textLabel.Font = Enum.Font.SourceSansBold
@@ -221,7 +221,15 @@ local function GetSelectedPlayerTargetHRP()
     if not SelectedTargetPlayerName or SelectedTargetPlayerName == "" or SelectedTargetPlayerName == "Không có ai khác" then
         return nil
     end
-    local targetPlayer = Players:FindFirstChild(SelectedTargetPlayerName)
+    
+    local targetPlayer = nil
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Name == SelectedTargetPlayerName or p.DisplayName == SelectedTargetPlayerName then
+            targetPlayer = p
+            break
+        end
+    end
+    
     if targetPlayer and targetPlayer.Character then
         local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
         local hum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -289,6 +297,17 @@ PlayerListDropdown = Tabs.Combat:Dropdown({
     end
 })
 
+-- Nút Làm mới danh sách người chơi (Refresh Player List)
+Tabs.Combat:Button({
+    Title = "🔄 Refresh Danh Sách Player",
+    Callback = function()
+        pcall(function()
+            PlayerListDropdown:SetValues(GetPlayerNames())
+        end)
+        WindUI:Notify({Title = "✨ Thành Công", Content = "Đã làm mới danh sách người chơi!", Duration = 2})
+    end
+})
+
 Players.PlayerAdded:Connect(function()
     pcall(function() PlayerListDropdown:SetValues(GetPlayerNames()) end)
 end)
@@ -311,17 +330,19 @@ Tabs.Combat:Button({
             return
         end
         
-        local targetPlayer = Players:FindFirstChild(SelectedTargetPlayerName)
-        if targetPlayer and targetPlayer.Character then
-            local targetHrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if targetHrp then
-                hrp.CFrame = targetHrp.CFrame + Vector3.new(0, 3, 0)
-                WindUI:Notify({Title = "✨ Thành Công", Content = "Đã dịch chuyển tới: " .. targetPlayer.Name, Duration = 2})
-            else
-                WindUI:Notify({Title = "❌ Lỗi", Content = "Không tìm thấy thể xác của mục tiêu!", Duration = 2})
-            end
+        local targetHrp = nil
+        local startTime = tick()
+        while tick() - startTime < 2.0 do
+            targetHrp = GetSelectedPlayerTargetHRP()
+            if targetHrp then break end
+            task.wait(0.1)
+        end
+        
+        if targetHrp then
+            hrp.CFrame = targetHrp.CFrame + Vector3.new(0, 3, 0)
+            WindUI:Notify({Title = "✨ Thành Công", Content = "Đã dịch chuyển tới mục tiêu!", Duration = 2})
         else
-        	WindUI:Notify({Title = "❌ Lỗi", Content = "Người chơi này đã rời game hoặc không tồn tại!", Duration = 2})
+            WindUI:Notify({Title = "❌ Lỗi", Content = "Người chơi này chưa tải xong nhân vật hoặc ở quá xa!", Duration = 3})
         end
     end
 })
@@ -369,7 +390,7 @@ Tabs.Combat:Toggle({
 })
 
 -- ========================================================
--- WINDUI ELEMENTS (AUTO FARM TAB - UPDATED CLEAN TEXT)
+-- WINDUI ELEMENTS (AUTO FARM TAB)
 -- ========================================================
 Tabs.Farm:Paragraph({
     Title = "🌟 LỘ TRÌNH FARM TỰ ĐỘNG",
