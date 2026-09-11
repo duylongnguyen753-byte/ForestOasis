@@ -1,5 +1,5 @@
 -- ========================================================
--- PRIMEVAL EARTH | FORESTHUB (10S ATTACK - 2S ESCAPE)
+-- PRIMEVAL EARTH | FORESTHUB (10S ATTACK - 2S ESCAPE + 9 POINTS)
 -- ========================================================
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -43,8 +43,8 @@ local IsAutoFarmRunning = false
 
 -- Combat & Timing Configuration (Attack 10s - Escape 2s)
 local SafeHeight = 140       
-local AttackDuration = 10.0   -- Đã đổi thành 10 giây cắn
-local EscapeDuration = 2.0   -- Trốn 2 giây trên cao
+local AttackDuration = 10.0   
+local EscapeDuration = 2.0   
 
 local CustomSpeed = 100      
 local OrbitRadius = 2.0      
@@ -68,7 +68,7 @@ local DodgeCooldown = 0
 local LockedCameraPosition = nil
 
 -- ========================================================
--- AUTO FARM ROUTE CONFIG
+-- AUTO FARM ROUTE CONFIG (TỌA ĐỘ THỨ 7 ĐÃ TĂNG Y THÊM 2)
 -- ========================================================
 local FarmPoints = {
     Vector3.new(1446.5, 77.1, -677.8),
@@ -77,7 +77,9 @@ local FarmPoints = {
     Vector3.new(-510.2, 77.7, -430.4),
     Vector3.new(-166.4, 110.4, 391.5),
     Vector3.new(1086.6, 70.4, 463.8),
-    Vector3.new(-171.2, 110.4, 388.3)
+    Vector3.new(-68.5, -66.9, -1487.0), -- Đã tăng Y từ -68.9 lên -66.9 (+2)
+    Vector3.new(201.8, -36.2, -365.1),
+    Vector3.new(-144.0, -100.5, 1035.6)
 }
 local farmIndex = 1
 local farmTimer = 0
@@ -86,7 +88,7 @@ local FarmParagraph = nil
 local function UpdateFarmStatus()
     if not FarmParagraph then return end
     local statusText = IsAutoFarmRunning and "Đang Chạy 🟢" or "Đang Tắt 🔴"
-    local content = string.format("Trạng thái hệ thống: %s\n📍 Đang ở điểm lộ trình: %d / %d\n\n✨ Cơ chế: Dịch chuyển thông minh, đứng chờ 10 giây mỗi điểm và hoàn toàn KHÔNG đánh nhau khi đang chạy lộ trình.", statusText, farmIndex, #FarmPoints)
+    local content = string.format("Trạng thái hệ thống: %s\n📍 Đang ở điểm lộ trình: %d / %d\n\n✨ Cơ chế: Dịch chuyển thông minh qua 9 điểm, đứng chờ 10 giây mỗi điểm và hoàn toàn KHÔNG đánh nhau khi đang chạy lộ trình.", statusText, farmIndex, #FarmPoints)
     pcall(function()
         FarmParagraph:Set({Title = "📊 Tiến Độ Lộ Trình Farm", Content = content})
     end)
@@ -298,7 +300,7 @@ Tabs.Farm:CreateToggle({
        if Value then
            farmIndex = 1
            farmTimer = tick()
-           Rayfield:Notify({Title = "🌟 Auto Farm Đã Bật", Content = "Đang bắt đầu lộ trình 7 điểm (Combat tạm dừng).", Duration = 2})
+           Rayfield:Notify({Title = "🌟 Auto Farm Đã Bật", Content = "Đang chạy lộ trình 9 điểm (Combat tạm dừng).", Duration = 2})
        else
            Rayfield:Notify({Title = "🛑 Auto Farm Đã Tắt", Content = "Hệ thống Combat đã khả dụng trở lại.", Duration = 2})
        end
@@ -308,7 +310,7 @@ Tabs.Farm:CreateToggle({
 
 FarmParagraph = Tabs.Farm:CreateParagraph({
     Title = "📊 Tiến Độ Lộ Trình Farm", 
-    Content = "Bấm bật công tắc phía trên để bắt đầu hành trình tự động dịch chuyển qua 7 điểm."
+    Content = "Bấm bật công tắc phía trên để bắt đầu hành trình tự động dịch chuyển qua 9 điểm."
 })
 
 -- TAB PLAYER & ESP
@@ -364,7 +366,7 @@ RunService.RenderStepped:Connect(function()
             LockedCameraPosition = nil
         end
         
-        -- NHÁNH 1: NẾU BẬT AUTO FARM -> CHỈ CHẠY LỘ TRÌNH, KHÔNG ĐÁNH
+        -- NHÁNH 1: NẾU BẬT AUTO FARM -> CHỈ CHẠY LỘ TRÌNH 9 ĐIỂM, KHÔNG ĐÁNH
         if IsAutoFarmRunning then
             local targetPos = FarmPoints[farmIndex]
             hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
