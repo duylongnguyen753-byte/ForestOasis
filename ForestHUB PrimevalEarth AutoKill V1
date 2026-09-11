@@ -1,5 +1,5 @@
 -- ========================================================
--- PRIMEVAL EARTH | WINDUI (FORESTHUB ON TOP - AUTO TARGET KILL)
+-- PRIMEVAL EARTH | WINDUI (FORESTHUB ON TOP - CUSTOM UI ORDER)
 -- ========================================================
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
@@ -18,7 +18,7 @@ local Window = WindUI:CreateWindow({
 
 WindUI:Notify({
     Title = "🦖 ForestHUB Đã Khởi Động!",
-    Content = "✨ Đã thêm tính năng Auto Target Kill thành công!",
+    Content = "✨ Đã di chuyển thanh khoảng cách cắn lên cạnh Auto Kill!",
     Duration = 5
 })
 
@@ -253,6 +253,16 @@ Tabs.Combat:Toggle({
     end
 })
 
+-- THANH KÉO KHOẢNG CÁCH CẮN ĐẶT NGAY DƯỚI AUTO KILL
+Tabs.Combat:Slider({
+    Title = "🎯 Bite / Orbit Distance (Khoảng cách cắn)",
+    Step = 0.1,
+    Value = { Min = 0, Max = 100, Default = 2 },
+    Callback = function(Value)
+        OrbitRadius = Value
+    end
+})
+
 Tabs.Combat:Divider()
 
 -- PHẦN CHỌN PLAYER VÀ TELEPORT / AUTO TARGET KILL
@@ -345,15 +355,6 @@ Tabs.Combat:Toggle({
     Callback = function(Value)
         AutoDodgeActive = Value
         WindUI:Notify({Title = "🏃 Auto Dodge", Content = Value and "Đã Bật chế độ tự né!" or "Đã Tắt!", Duration = 2})
-    end
-})
-
-Tabs.Combat:Slider({
-    Title = "🎯 Bite / Orbit Distance (Khoảng cách cắn)",
-    Step = 0.1,
-    Value = { Min = 0, Max = 100, Default = 2 },
-    Callback = function(Value)
-        OrbitRadius = Value
     end
 })
 
