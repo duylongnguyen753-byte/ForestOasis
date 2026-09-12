@@ -23,6 +23,7 @@ local TabPlayer = Window:CreateTab("🛡️ Player & ESP (Nhân Vật & Nhìn Xu
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 
@@ -37,6 +38,7 @@ local AmberConnection = nil
 local GoatConnection = nil
 local InstantPromptConnection = nil
 local NoclipConnection = nil
+local FullbrightConnection = nil
 
 local SafeHeight = 12 
 local BiteAltitude = 0 
@@ -72,9 +74,10 @@ local function UpdateGoatStatus(text)
 end
 
 -- ========================================================
--- ESP SYSTEM
+-- ESP & FULLBRIGHT SYSTEM
 -- ========================================================
 local ESPEnabled = false
+local FullbrightEnabled = false
 local ESPFolder = Instance.new("Folder", Workspace)
 ESPFolder.Name = "ForestHub_ESP_Folder"
 
@@ -315,7 +318,6 @@ TabCombat:CreateToggle({
                         hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                         hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
                         
-                        -- Thuật toán bám sát thông minh dự đoán vận tốc đối thủ (bất chấp chạy nhanh/nhảy cao)
                         local targetCF = targetHrp.CFrame
                         local targetVel = targetHrp.AssemblyLinearVelocity
                         local predictedPos = targetCF.Position + (targetVel * 0.25)
@@ -773,7 +775,7 @@ TabPlayer:CreateSlider({
     Callback = function(v) pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = v end) end
 })
 
-TabPlayer:CreateSection("👀 ESP Features (Tính Năng Nhìn Xuyên Tường)")
+TabPlayer:CreateSection("👀 ESP & Lighting Features (Tính Năng ESP & Sáng Môi Trường)")
 
 TabPlayer:CreateToggle({
     Name = "Player ESP (Hiển Thị Khung Người Chơi)",
@@ -785,6 +787,36 @@ TabPlayer:CreateToggle({
             ClearESP()
         else
             UpdatePlayerESP()
+        end
+    end
+})
+
+TabPlayer:CreateToggle({
+    Name = "Fullbright (Sáng Rõ Toàn Bản Đồ Không Tối)",
+    CurrentValue = false,
+    Flag = "FullbrightToggle",
+    Callback = function(v)
+        FullbrightEnabled = v
+        if FullbrightEnabled then
+            FullbrightConnection = RunService.RenderStepped:Connect(function()
+                pcall(function()
+                    Lighting.Brightness = 2
+                    Lighting.ClockTime = 14
+                    Lighting.FogEnd = 100000
+                    Lighting.GlobalShadows = false
+                    Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+                end)
+            end)
+        else
+            if FullbrightConnection then
+                FullbrightConnection:Disconnect()
+                FullbrightConnection = nil
+            end
+            pcall(function()
+                Lighting.Brightness = 1
+                Lighting.GlobalShadows = true
+                Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
+            end)
         end
     end
 })
@@ -807,4 +839,4 @@ pcall(function()
 end)
 
 Rayfield:LoadConfiguration()
-Rayfield:Notify({Title = "ForestHUB Ready!", Content = "Đã cập nhật Auto Kill bám sát đối thủ siêu dính!", Duration = 4})
+Rayfield:Notify({Title = "ForestHUB Ready!", Content = "Đã thêm tính năng Fullbright thành công!", Duration = 4})
