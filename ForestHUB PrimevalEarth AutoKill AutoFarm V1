@@ -1,5 +1,5 @@
 -- ========================================================
--- PRIMEVAL EARTH | WINDUI (FORESTHUB - FIXED EMERGENCY ESCAPE)
+-- PRIMEVAL EARTH | WINDUI (FORESTHUB - FINAL CLEAN VERSION)
 -- ========================================================
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
@@ -18,7 +18,7 @@ local Window = WindUI:CreateWindow({
 
 WindUI:Notify({
     Title = "🦖 ForestHUB Initialized!",
-    Content = "✨ Fixed Escape & Return Logic Loaded!",
+    Content = "✨ Đã xóa góc nhìn cao, giữ lại Anti-Shake chuẩn!",
     Duration = 5
 })
 
@@ -286,7 +286,7 @@ end
 -- ========================================================
 Tabs.Combat:Paragraph({
     Title = "🔥 HỆ THỐNG TẤN CÔNG & SĂN MỒI",
-    Desc = "• Đã sửa lỗi kẹt trạng thái trốn máu yếu, tự động quay lại chiến đấu khi đầy máu."
+    Desc = "• Auto Aim, Auto Run & Auto Attack hoạt động hoàn hảo."
 })
 
 Tabs.Combat:Dropdown({
@@ -332,11 +332,11 @@ Tabs.Combat:Divider()
 
 Tabs.Combat:Paragraph({
     Title = "🎯 GLOBAL AUTO AIM & CHASE",
-    Desc = "Quét toàn bản đồ, tự động aim, chạy tới và cắn mục tiêu gần nhất."
+    Desc = "Quét toàn bản đồ, tự động aim cực chắc, chạy tới và cắn mục tiêu."
 })
 
 Tabs.Combat:Toggle({
-    Title = "🎯 Bật Auto Aim (Quét Toàn Map)",
+    Title = "🎯 Bật Auto Aim (Khóa Cực Chắc)",
     Default = false,
     Callback = function(Value)
         AutoAimActive = Value
@@ -558,22 +558,26 @@ RunService.RenderStepped:Connect(function(dt)
         local currentTime = tick()
         
         local globalTargetHrp = GetNearestGlobalTarget()
+        
+        -- AUTO AIM (KHÓA CỰC CHẮC VÀO MỤC TIÊU GẦN NHẤT)
         if AutoAimActive and globalTargetHrp then
             pcall(function()
                 local targetHead = globalTargetHrp.Parent and globalTargetHrp.Parent:FindFirstChild("Head")
                 local lookTarget = targetHead or globalTargetHrp
-                local currentCamCF = Camera.CFrame
-                local targetLookCF = CFrame.new(currentCamCF.Position, lookTarget.Position)
-                Camera.CFrame = currentCamCF:Lerp(targetLookCF, 0.4)
+                local targetPos = lookTarget.Position
+                local desiredCF = CFrame.new(Camera.CFrame.Position, targetPos)
+                Camera.CFrame = Camera.CFrame:Lerp(desiredCF, 1)
             end)
         end
 
+        -- AUTO RUN (CHỌC LỆNH DI CHUYỂN TỚI MỤC TIÊU)
         if AutoRunActive and globalTargetHrp and not AutoKillActive and not AutoTargetKillActive then
             pcall(function()
                 humanoid:MoveTo(globalTargetHrp.Position)
             end)
         end
 
+        -- AUTO ATTACK (TỰ ĐỘNG CẮN NẾU TRONG KHOẢNG CÁCH <= 25)
         if AutoAttackActive and globalTargetHrp and not AutoKillActive and not AutoTargetKillActive then
             local dist = (hrp.Position - globalTargetHrp.Position).Magnitude
             if dist <= 25 then 
@@ -584,6 +588,7 @@ RunService.RenderStepped:Connect(function(dt)
             end
         end
         
+        -- ANTI SHAKE CAMERA
         if AntiShakeCameraActive and not AutoAimActive then
             local currentCamCF = Camera.CFrame
             if not LockedCameraPosition then
@@ -612,7 +617,6 @@ RunService.RenderStepped:Connect(function(dt)
         
         local myHealthPercent = humanoid.Health / humanoid.MaxHealth
         
-        -- SỬA LỖI TẠI ĐÂY: Dù tính năng trốn bật hay tắt, nếu máu >= 0.7 (70%) thì luôn ép CombatState về 1 để đánh tiếp. Nếu máu <= 0.25 (25%) và bật trốn thì mới chuyển sang 2.
         if EmergencyEscapeToggle and myHealthPercent <= 0.25 and myHealthPercent > 0 then
             CombatState = 2 
         elseif myHealthPercent >= 0.70 or not EmergencyEscapeToggle then
