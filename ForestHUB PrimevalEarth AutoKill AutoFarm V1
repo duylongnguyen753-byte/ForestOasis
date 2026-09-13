@@ -1,33 +1,31 @@
 -- ========================================================
--- PRIMEVAL EARTH | RAYFIELD UI (FORESTHUB - FINAL FIXED AUTO RUN & ATTACK)
+-- PRIMEVAL EARTH | WIND UI (FORESTHUB - FIXED AUTO RUN DIRECTION)
 -- ========================================================
 
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
-local Window = Rayfield:CreateWindow({
-    Name = "🦖 Primeval Earth | 🌟 ForestHUB On Top",
-    LoadingTitle = "✨ ForestHUB Initialized!",
-    LoadingSubtitle = "by Official Team Forest",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "ForestHubConfigs",
-        FileName = "PrimevalEarthConfig"
-    },
-    KeySystem = false,
+local Window = WindUI:CreateWindow({
+    Title = "🦖 Primeval Earth | 🌟 ForestHUB On Top",
+    Icon = "paw-print",
+    Author = "by Official Team Forest",
+    Folder = "ForestHubConfigs",
+    Size = UDim2.fromOffset(580, 460),
+    Transparent = true,
+    Theme = "Dark",
+    Acrylic = true,
 })
 
-Rayfield:Notify({
+WindUI:Notify({
     Title = "🦖 ForestHUB Ready!",
-    Content = "✨ Đã sửa hoàn toàn lỗi hướng Auto Run & tối ưu cắn mục tiêu!",
+    Content = "✨ Đã chuyển sang giao diện WindUI & fix chuẩn hướng Auto Run!",
     Duration = 5,
-    Image = 4483362458,
 })
 
 local Tabs = {
-    Combat = Window:CreateTab("⚔️ Combat Hub", 4483362458),
-    Farm = Window:CreateTab("🌾 Auto Farm Route", 4483362458),
-    Player = Window:CreateTab("🛡️ Player & ESP", 4483362458),
-    Settings = Window:CreateTab("⚙️ Settings & UI", 4483362458)
+    Combat = Window:Tab({ Title = "⚔️ Combat Hub", Icon = "swords" }),
+    Farm = Window:Tab({ Title = "🌾 Auto Farm", Icon = "map-pin" }),
+    Player = Window:Tab({ Title = "🛡️ Player & ESP", Icon = "eye" }),
+    Settings = Window:Tab({ Title = "⚙️ Settings", Icon = "settings" })
 }
 
 local Players = game:GetService("Players")
@@ -48,7 +46,6 @@ local AutoAimActive = false
 local AutoRunActive = false
 local AutoAttackActive = false
 
--- ĐẶT MẶC ĐỊNH SPEED LÀ 70
 local CustomSpeed = 70      
 local CustomJumpPower = 50  
 local OrbitRadius = 1.0      
@@ -62,8 +59,6 @@ local SelectedTargetPlayerName = nil
 local LockedCameraPosition = nil
 local AttackModeOption = "Xoay vòng đối thủ"
 local CurrentPersistentTarget = nil
-
-local CombatState = 1 
 
 local CombatRemotes = {}
 pcall(function()
@@ -90,14 +85,14 @@ local FarmPoints = {
 }
 local farmIndex = 1
 local farmTimer = 0
-local FarmParagraphLabel = nil
+local FarmParagraphRef = nil
 
 local function UpdateFarmStatus()
-    if not FarmParagraphLabel then return end
+    if not FarmParagraphRef then return end
     local statusText = IsAutoFarmRunning and "🟢 ĐANG CHẠY LỘ TRÌNH" or "🔴 ĐANG TẮT"
     local content = string.format("• Trạng thái: %s\n• Đang ở điểm số: %d / %d\n\n✨ Hệ thống dịch chuyển mượt mà, đứng chờ 10.5s mỗi điểm.", statusText, farmIndex, #FarmPoints)
     pcall(function()
-        FarmParagraphLabel:Set(content)
+        FarmParagraphRef:SetDesc(content)
     end)
 end
 
@@ -283,93 +278,83 @@ local function PerformAttack(targetChar)
 end
 
 -- ========================================================
--- RAYFIELD ELEMENTS (COMBAT TAB)
+-- WINDUI ELEMENTS (COMBAT TAB)
 -- ========================================================
-Tabs.Combat:CreateSection("🔥 HỆ THỐNG TẤN CÔNG & SĂN MỒI")
-
-Tabs.Combat:CreateParagraph({
+Tabs.Combat:Paragraph({
     Title = "Trạng thái",
-    Content = "• Đã fix hoàn tất: Auto Run chạy thẳng trực diện vào đối thủ, vượt qua tự động quay đầu cắn ngay."
+    Desc = "• Đã fix chuẩn hướng Auto Run: Nhân vật lao thẳng tới trước vào đối thủ."
 })
 
-Tabs.Combat:CreateDropdown({
-    Name = "⚔️ Tùy Chọn Cách Đánh",
-    Options = {"Xoay vòng đối thủ", "Cắn ở sau lưng (Blindspot)"},
-    CurrentOption = {"Xoay vòng đối thủ"},
-    Flag = "AttackMode",
+Tabs.Combat:Dropdown({
+    Title = "⚔️ Tùy Chọn Cách Đánh",
+    Values = {"Xoay vòng đối thủ", "Cắn ở sau lưng (Blindspot)"},
+    Value = "Xoay vòng đối thủ",
     Callback = function(Option)
-        AttackModeOption = Option[1]
-        Rayfield:Notify({Title = "⚔️ Cách Đánh", Content = "Đã chuyển sang: " .. AttackModeOption, Duration = 2})
+        AttackModeOption = Option
+        WindUI:Notify({Title = "⚔️ Cách Đánh", Content = "Đã chuyển sang: " .. Option, Duration = 2})
     end
 })
 
-Tabs.Combat:CreateToggle({
-    Name = "⚡ Auto Kill (Bám Cắn Mục Tiêu Đến Chết)",
-    CurrentValue = false,
-    Flag = "AutoKill",
+Tabs.Combat:Toggle({
+    Title = "⚡ Auto Kill (Bám Cắn Mục Tiêu Đến Chết)",
+    Value = false,
     Callback = function(Value)
         AutoKillActive = Value
         CurrentPersistentTarget = nil
-        CombatState = 1
-        Rayfield:Notify({Title = "⚡ Auto Kill", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
+        WindUI:Notify({Title = "⚡ Auto Kill", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
     end
 })
 
-Tabs.Combat:CreateToggle({
-    Name = "🛡️ Tự động bay lên trời trốn khi máu < 25%",
-    CurrentValue = false,
-    Flag = "EmergencyEscape",
+Tabs.Combat:Toggle({
+    Title = "🛡️ Tự động bay lên trời trốn khi máu < 25%",
+    Value = false,
     Callback = function(Value)
         EmergencyEscapeToggle = Value
-        Rayfield:Notify({Title = "🛡️ Né Máu Yếu", Content = Value and "Đã Bật tính năng trốn!" or "Đã Tắt tính năng trốn!", Duration = 2})
+        WindUI:Notify({Title = "🛡️ Né Máu Yếu", Content = Value and "Đã Bật tính năng trốn!" or "Đã Tắt tính năng trốn!", Duration = 2})
     end
 })
 
-Tabs.Combat:CreateSlider({
-    Name = "🎯 Khoảng cách bám (Orbit Distance)",
+Tabs.Combat:Slider({
+    Title = "🎯 Khoảng cách bám (Orbit Distance)",
     Range = {0, 100},
     Increment = 0.5,
     Suffix = "Studs",
-    CurrentValue = 1.0,
-    Flag = "OrbitDistance",
+    Value = 1.0,
     Callback = function(Value)
         OrbitRadius = Value
     end
 })
 
-Tabs.Combat:CreateSection("🎯 GLOBAL AUTO AIM & CHASE")
+Tabs.Combat:Divider()
 
-Tabs.Combat:CreateToggle({
-    Name = "🎯 Bật Auto Aim (Khóa Cực Chắc)",
-    CurrentValue = false,
-    Flag = "AutoAim",
+Tabs.Combat:Toggle({
+    Title = "🎯 Bật Auto Aim (Khóa Cực Chắc)",
+    Value = false,
     Callback = function(Value)
         AutoAimActive = Value
-        Rayfield:Notify({Title = "🎯 Auto Aim", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
+        WindUI:Notify({Title = "🎯 Auto Aim", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
     end
 })
 
-Tabs.Combat:CreateToggle({
-    Name = "🏃‍♂️ Auto Run (Chạy bám đuổi & tự quay đầu cắn)",
-    CurrentValue = false,
-    Flag = "AutoRun",
+Tabs.Combat:Toggle({
+    Title = "🏃‍♂️ Auto Run (Chạy thẳng chuẩn xác tới đối thủ)",
+    Value = false,
     Callback = function(Value)
         AutoRunActive = Value
-        Rayfield:Notify({Title = "🏃‍♂️ Auto Run", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
+        WindUI:Notify({Title = "🏃‍♂️ Auto Run", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
     end
 })
 
-Tabs.Combat:CreateToggle({
-    Name = "🦷 Auto Attack (Tự động cắn mục tiêu Aim)",
-    CurrentValue = false,
-    Flag = "AutoAttack",
+Tabs.Combat:Toggle({
+    Title = "🦷 Auto Attack (Tự động cắn mục tiêu Aim)",
+    Value = false,
     Callback = function(Value)
         AutoAttackActive = Value
-        Rayfield:Notify({Title = "🦷 Auto Attack", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
+        WindUI:Notify({Title = "🦷 Auto Attack", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
     end
 })
 
-Tabs.Combat:CreateSection("🎯 CHỌN MỤC TIÊU RIÊNG & TELEPORT")
+Tabs.Combat:Divider()
 
 local function GetPlayerNames()
     local list = {}
@@ -382,23 +367,22 @@ local function GetPlayerNames()
     return list
 end
 
-local PlayerListDropdown = Tabs.Combat:CreateDropdown({
-    Name = "👥 Chọn Người Chơi",
-    Options = GetPlayerNames(),
-    CurrentOption = {""},
-    Flag = "SelectedPlayer",
+local PlayerListDropdown = Tabs.Combat:Dropdown({
+    Title = "👥 Chọn Người Chơi",
+    Values = GetPlayerNames(),
+    Value = "",
     Callback = function(Option)
-        SelectedTargetPlayerName = Option[1]
+        SelectedTargetPlayerName = Option
     end
 })
 
-Tabs.Combat:CreateButton({
-    Name = "🔄 Refresh Danh Sách Player",
+Tabs.Combat:Button({
+    Title = "🔄 Refresh Danh Sách Player",
     Callback = function()
         pcall(function()
             PlayerListDropdown:Refresh(GetPlayerNames(), true)
         end)
-        Rayfield:Notify({Title = "✨ Thành Công", Content = "Đã làm mới danh sách!", Duration = 2})
+        WindUI:Notify({Title = "✨ Thành Công", Content = "Đã làm mới danh sách!", Duration = 2})
     end
 })
 
@@ -409,8 +393,8 @@ Players.PlayerRemoving:Connect(function()
     pcall(function() PlayerListDropdown:Refresh(GetPlayerNames(), true) end)
 end)
 
-Tabs.Combat:CreateButton({
-    Name = "🚀 Teleport Tới Người Chơi Đã Chọn",
+Tabs.Combat:Button({
+    Title = "🚀 Teleport Tới Người Chơi Đã Chọn",
     Callback = function()
         local char = LocalPlayer.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -419,31 +403,28 @@ Tabs.Combat:CreateButton({
         local targetHrp = GetSelectedPlayerTargetHRP()
         if targetHrp then
             hrp.CFrame = targetHrp.CFrame + Vector3.new(0, 3, 0)
-            Rayfield:Notify({Title = "✨ Thành Công", Content = "Đã dịch chuyển tới mục tiêu!", Duration = 2})
+            WindUI:Notify({Title = "✨ Thành Công", Content = "Đã dịch chuyển tới mục tiêu!", Duration = 2})
         else
-            Rayfield:Notify({Title = "❌ Lỗi", Content = "Không tìm thấy người chơi này!", Duration = 2})
+            WindUI:Notify({Title = "❌ Lỗi", Content = "Không tìm thấy người chơi này!", Duration = 2})
         end
     end
 })
 
-Tabs.Combat:CreateToggle({
-    Name = "🎯 Auto Target Kill (Cắn Người Được Chọn Tới Chết)",
-    CurrentValue = false,
-    Flag = "AutoTargetKill",
+Tabs.Combat:Toggle({
+    Title = "🎯 Auto Target Kill (Cắn Người Được Chọn Tới Chết)",
+    Value = false,
     Callback = function(Value)
         AutoTargetKillActive = Value
         CurrentPersistentTarget = nil
-        CombatState = 1
-        Rayfield:Notify({Title = "🎯 Auto Target Kill", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
+        WindUI:Notify({Title = "🎯 Auto Target Kill", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
     end
 })
 
-Tabs.Combat:CreateSection("⚙️ CÀI ĐẶT CAMERA")
+Tabs.Combat:Divider()
 
-Tabs.Combat:CreateToggle({
-    Name = "🛡️ Anti-Shake Camera",
-    CurrentValue = false,
-    Flag = "AntiShake",
+Tabs.Combat:Toggle({
+    Title = "🛡️ Anti-Shake Camera",
+    Value = false,
     Callback = function(Value)
         AntiShakeCameraActive = Value
         LockedCameraPosition = nil
@@ -451,14 +432,11 @@ Tabs.Combat:CreateToggle({
 })
 
 -- ========================================================
--- RAYFIELD ELEMENTS (AUTO FARM TAB)
+-- WINDUI ELEMENTS (AUTO FARM TAB)
 -- ========================================================
-Tabs.Farm:CreateSection("🌟 LỘ TRÌNH FARM TỰ ĐỘNG")
-
-Tabs.Farm:CreateToggle({
-    Name = "🚀 Bật/Tắt Auto Farm Route",
-    CurrentValue = false,
-    Flag = "AutoFarmRoute",
+Tabs.Farm:Toggle({
+    Title = "🚀 Bật/Tắt Auto Farm Route",
+    Value = false,
     Callback = function(Value)
         IsAutoFarmRunning = Value
         if Value then
@@ -469,63 +447,56 @@ Tabs.Farm:CreateToggle({
     end
 })
 
-FarmParagraphLabel = Tabs.Farm:CreateParagraph({
+FarmParagraphRef = Tabs.Farm:Paragraph({
     Title = "📊 Tiến Độ Lộ Trình Hiện Tại",
-    Content = "• Trạng thái: 🔴 ĐANG TẮT\n• Bấm bật công tắc phía trên để bắt đầu."
+    Desc = "• Trạng thái: 🔴 ĐANG TẮT\n• Bấm bật công tắc phía trên để bắt đầu."
 })
 
 -- ========================================================
--- RAYFIELD ELEMENTS (PLAYER & ESP TAB)
+-- WINDUI ELEMENTS (PLAYER & ESP TAB)
 -- ========================================================
-Tabs.Player:CreateSection("👁️ HỆ THỐNG ESP & TẦM NHÌN")
-
-Tabs.Player:CreateToggle({
-    Name = "👀 Player ESP (Xuyên Tường & Máu)",
-    CurrentValue = false,
-    Flag = "PlayerESP",
+Tabs.Player:Toggle({
+    Title = "👀 Player ESP (Xuyên Tường & Máu)",
+    Value = false,
     Callback = function(Value)
         ESPEnabled = Value
         if not ESPEnabled then ClearESP() end
-        Rayfield:Notify({Title = "👀 Player ESP", Content = Value and "Đã bật!" or "Đã tắt!", Duration = 2})
+        WindUI:Notify({Title = "👀 Player ESP", Content = Value and "Đã bật!" or "Đã tắt!", Duration = 2})
     end
 })
 
 -- ========================================================
--- SETTINGS TAB
+-- WINDUI ELEMENTS (SETTINGS TAB)
 -- ========================================================
-Tabs.Settings:CreateSection("⚙️ CÀI ĐẶT NHÂN VẬT & TIỆN ÍCH")
-
-Tabs.Settings:CreateSlider({
-    Name = "🚀 WalkSpeed (Tốc độ chạy)",
+Tabs.Settings:Slider({
+    Title = "🚀 WalkSpeed (Tốc độ chạy)",
     Range = {16, 1000},
     Increment = 1,
     Suffix = "Speed",
-    CurrentValue = 70,
-    Flag = "WalkSpeedSlider",
+    Value = 70,
     Callback = function(Value)
         CustomSpeed = Value
     end
 })
 
-Tabs.Settings:CreateSlider({
-    Name = "🦘 JumpPower (Độ cao nhảy)",
+Tabs.Settings:Slider({
+    Title = "🦘 JumpPower (Độ cao nhảy)",
     Range = {0, 200},
     Increment = 1,
     Suffix = "Power",
-    CurrentValue = 50,
-    Flag = "JumpPowerSlider",
+    Value = 50,
     Callback = function(Value)
         CustomJumpPower = Value
     end
 })
 
-Tabs.Settings:CreateButton({
-    Name = "🦅 Bật Fly GUI V4",
+Tabs.Settings:Button({
+    Title = "🦅 Bật Fly GUI V4",
     Callback = function()
         pcall(function()
             loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Better-Fly-GUI-44304"))()
         end)
-        Rayfield:Notify({Title = "✨ Fly GUI", Content = "Đã kích hoạt Fly GUI V4!", Duration = 3})
+        WindUI:Notify({Title = "✨ Fly GUI", Content = "Đã kích hoạt Fly GUI V4!", Duration = 3})
     end
 })
 
@@ -559,9 +530,7 @@ RunService.RenderStepped:Connect(function(dt)
         local currentTime = tick()
         local myHealthPercent = humanoid.Health / humanoid.MaxHealth
         
-        -- ========================================================
-        -- 1. ƯU TIÊN SỐ 1: KIỂM TRA MÁY YẾU (< 25%) ĐỂ TRỐN NGAY LẬP TỨC
-        -- ========================================================
+        -- 1. NÉ MÁU YẾU (< 25%)
         if EmergencyEscapeToggle and myHealthPercent <= 0.25 and myHealthPercent > 0 then
             local targetHrpForEscape = nil
             if AutoTargetKillActive then
@@ -579,9 +548,7 @@ RunService.RenderStepped:Connect(function(dt)
         
         local globalTargetHrp = GetNearestGlobalTarget()
         
-        -- ========================================================
         -- 2. AUTO AIM
-        -- ========================================================
         if AutoAimActive and globalTargetHrp then
             pcall(function()
                 local targetHead = globalTargetHrp.Parent and globalTargetHrp.Parent:FindFirstChild("Head")
@@ -592,15 +559,12 @@ RunService.RenderStepped:Connect(function(dt)
             end)
         end
 
-        -- ========================================================
-        -- 3. AUTO RUN (FIX: LAO THẲNG VỀ TRƯỚC TỚI ĐỐI THỦ, KHÔNG BỊ NGƯỢC HƯỚNG)
-        -- ========================================================
+        -- 3. AUTO RUN (FIX CHUẨN XÁC HƯỚNG TIẾN TỚI)
         if AutoRunActive and globalTargetHrp and not AutoKillActive and not AutoTargetKillActive then
             pcall(function()
                 local rawDirection = (globalTargetHrp.Position - hrp.Position)
                 local flatDir = Vector3.new(rawDirection.X, 0, rawDirection.Z)
                 
-                -- Đưa vector hướng về không gian cục bộ nhân vật để luôn tiến tới trước chính xác
                 local localMoveDir = hrp.CFrame:VectorToObjectSpace(flatDir)
                 if localMoveDir.Magnitude > 0.01 then
                     humanoid:Move(localMoveDir.Unit, true)
@@ -608,15 +572,12 @@ RunService.RenderStepped:Connect(function(dt)
                     humanoid:Move(Vector3.new(0, 0, -1), true)
                 end
                 
-                -- Luôn luôn xoay mặt thẳng về phía đối thủ để sẵn sàng cắn/tấn công
                 local lookAtTarget = CFrame.new(hrp.Position, Vector3.new(globalTargetHrp.Position.X, hrp.Position.Y, globalTargetHrp.Position.Z))
                 hrp.CFrame = hrp.CFrame:Lerp(lookAtTarget, 0.25)
             end)
         end
 
-        -- ========================================================
-        -- 4. AUTO ATTACK (CẮN LIÊN TỤC NGAY KHI TRONG TẦM TẤN CÔNG)
-        -- ========================================================
+        -- 4. AUTO ATTACK
         if AutoAttackActive and globalTargetHrp and not AutoKillActive and not AutoTargetKillActive then
             local dist = (hrp.Position - globalTargetHrp.Position).Magnitude
             if dist <= 30 then 
@@ -627,9 +588,7 @@ RunService.RenderStepped:Connect(function(dt)
             end
         end
         
-        -- ========================================================
         -- 5. ANTI SHAKE CAMERA
-        -- ========================================================
         if AntiShakeCameraActive and not AutoAimActive then
             local currentCamCF = Camera.CFrame
             if not LockedCameraPosition then
@@ -642,9 +601,7 @@ RunService.RenderStepped:Connect(function(dt)
             LockedCameraPosition = nil
         end
         
-        -- ========================================================
         -- 6. AUTO FARM ROUTE
-        -- ========================================================
         if IsAutoFarmRunning then
             local targetPos = FarmPoints[farmIndex]
             hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
@@ -659,9 +616,7 @@ RunService.RenderStepped:Connect(function(dt)
             return 
         end
         
-        -- ========================================================
-        -- 7. AUTO KILL & AUTO TARGET KILL (ORBIT & ATTACK)
-        -- ========================================================
+        -- 7. AUTO KILL & AUTO TARGET KILL
         local targetHrp = nil
         if AutoTargetKillActive then
             targetHrp = GetSelectedPlayerTargetHRP()
