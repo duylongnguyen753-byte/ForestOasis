@@ -1,5 +1,5 @@
 -- ========================================================
--- PRIMEVAL EARTH | RAYFIELD UI (FORESTHUB)
+-- PRIMEVAL EARTH | RAYFIELD UI (FORESTHUB - FIXED AUTO RUN DIRECTION REVERSE)
 -- ========================================================
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -18,7 +18,7 @@ local Window = Rayfield:CreateWindow({
 
 Rayfield:Notify({
     Title = "🦖 ForestHUB Ready!",
-    Content = "✨ Đã chuyển sang Rayfield UI thành công!",
+    Content = "✨ Đã sửa lỗi Auto Run chạy ngược, giờ chạy thẳng chuẩn xác vào mục tiêu!",
     Duration = 5,
     Image = 4483362458,
 })
@@ -289,7 +289,7 @@ Tabs.Combat:CreateSection("🔥 HỆ THỐNG TẤN CÔNG & SĂN MỒI")
 
 Tabs.Combat:CreateParagraph({
     Title = "Trạng thái",
-    Content = "• Auto Aim, Auto Run & Auto Attack hoạt động hoàn hảo."
+    Content = "• Đã fix hướng Auto Run chạy chuẩn xác trực diện vào đối thủ (đã đảo hướng vector)."
 })
 
 Tabs.Combat:CreateDropdown({
@@ -350,7 +350,7 @@ Tabs.Combat:CreateToggle({
 })
 
 Tabs.Combat:CreateToggle({
-    Name = "🏃‍♂️ Auto Run (Chạy tới người đang Aim)",
+    Name = "🏃‍♂️ Auto Run (Chạy chuẩn xác thẳng về phía trước tới đối thủ)",
     CurrentValue = false,
     Flag = "AutoRun",
     Callback = function(Value)
@@ -557,10 +557,31 @@ RunService.RenderStepped:Connect(function(dt)
         end)
         
         local currentTime = tick()
+        local myHealthPercent = humanoid.Health / humanoid.MaxHealth
+        
+        -- ========================================================
+        -- 1. ƯU TIÊN SỐ 1: KIỂM TRA MÁY YẾU (< 25%) ĐỂ TRỐN NGAY LẬP TỨC
+        -- ========================================================
+        if EmergencyEscapeToggle and myHealthPercent <= 0.25 and myHealthPercent > 0 then
+            local targetHrpForEscape = nil
+            if AutoTargetKillActive then
+                targetHrpForEscape = GetSelectedPlayerTargetHRP()
+            elseif AutoKillActive or AutoAimActive then
+                targetHrpForEscape = GetNearestGlobalTarget()
+            end
+            
+            local escapeRefPos = targetHrpForEscape and targetHrpForEscape.Position or hrp.Position
+            local escapePos = escapeRefPos + Vector3.new(0, SafeHeight, 0)
+            hrp.CFrame = CFrame.new(escapePos, hrp.Position + hrp.CFrame.LookVector)
+            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            return 
+        end
         
         local globalTargetHrp = GetNearestGlobalTarget()
         
-        -- AUTO AIM (KHÓA CỰC CHẮC VÀO MỤC TIÊU GẦN NHẤT)
+        -- ========================================================
+        -- 2. AUTO AIM
+        -- ========================================================
         if AutoAimActive and globalTargetHrp then
             pcall(function()
                 local targetHead = globalTargetHrp.Parent and globalTargetHrp.Parent:FindFirstChild("Head")
@@ -571,25 +592,44 @@ RunService.RenderStepped:Connect(function(dt)
             end)
         end
 
-        -- AUTO RUN (CHỌC LỆNH DI CHUYỂN TỚI MỤC TIÊU)
+        -- ========================================================
+        -- 3. AUTO RUN (FIX CHUẨN XÁC: LAO THẲNG VỀ PHÍA TRƯỚC TỚI ĐỐI THỦ)
+        -- ========================================================
         if AutoRunActive and globalTargetHrp and not AutoKillActive and not AutoTargetKillActive then
             pcall(function()
-                humanoid:MoveTo(globalTargetHrp.Position)
+                local rawDirection = (globalTargetHrp.Position - hrp.Position)
+                local flatDir = Vector3.new(rawDirection.X, 0, rawDirection.Z)
+                
+                -- Đổi chiều hướng di chuyển từ hướng đối thủ quy về góc nhìn cục bộ của nhân vật để nhân vật luôn tiến tới trước
+                local localMoveDir = hrp.CFrame:VectorToObjectSpace(flatDir)
+                if localMoveDir.Magnitude > 0.01 then
+                    humanoid:Move(localMoveDir.Unit, true)
+                else
+                    humanoid:Move(Vector3.new(0, 0, -1), true)
+                end
+                
+                -- Luôn luôn xoay mặt đối diện thẳng vào đối thủ để sẵn sàng cắn
+                local lookAtTarget = CFrame.new(hrp.Position, Vector3.new(globalTargetHrp.Position.X, hrp.Position.Y, globalTargetHrp.Position.Z))
+                hrp.CFrame = hrp.CFrame:Lerp(lookAtTarget, 0.25)
             end)
         end
 
-        -- AUTO ATTACK (TỰ ĐỘNG CẮN NẾU TRONG KHOẢNG CÁCH <= 25)
+        -- ========================================================
+        -- 4. AUTO ATTACK (CẮN LIÊN TỤC NGAY KHI TRONG TẦM TẤN CÔNG)
+        -- ========================================================
         if AutoAttackActive and globalTargetHrp and not AutoKillActive and not AutoTargetKillActive then
             local dist = (hrp.Position - globalTargetHrp.Position).Magnitude
-            if dist <= 25 then 
-                if currentTime - LastAttackTick >= 0.02 then
+            if dist <= 30 then 
+                if currentTime - LastAttackTick >= 0.01 then
                     LastAttackTick = currentTime
                     PerformAttack(globalTargetHrp.Parent)
                 end
             end
         end
         
-        -- ANTI SHAKE CAMERA
+        -- ========================================================
+        -- 5. ANTI SHAKE CAMERA
+        -- ========================================================
         if AntiShakeCameraActive and not AutoAimActive then
             local currentCamCF = Camera.CFrame
             if not LockedCameraPosition then
@@ -602,6 +642,9 @@ RunService.RenderStepped:Connect(function(dt)
             LockedCameraPosition = nil
         end
         
+        -- ========================================================
+        -- 6. AUTO FARM ROUTE
+        -- ========================================================
         if IsAutoFarmRunning then
             local targetPos = FarmPoints[farmIndex]
             hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
@@ -616,14 +659,9 @@ RunService.RenderStepped:Connect(function(dt)
             return 
         end
         
-        local myHealthPercent = humanoid.Health / humanoid.MaxHealth
-        
-        if EmergencyEscapeToggle and myHealthPercent <= 0.25 and myHealthPercent > 0 then
-            CombatState = 2 
-        elseif myHealthPercent >= 0.70 or not EmergencyEscapeToggle then
-            CombatState = 1 
-        end
-
+        -- ========================================================
+        -- 7. AUTO KILL & AUTO TARGET KILL (ORBIT & ATTACK)
+        -- ========================================================
         local targetHrp = nil
         if AutoTargetKillActive then
             targetHrp = GetSelectedPlayerTargetHRP()
@@ -638,35 +676,29 @@ RunService.RenderStepped:Connect(function(dt)
             local targetHum = targetChar:FindFirstChildOfClass("Humanoid")
             
             if targetHum and targetHum.Health > 0 then
-                if CombatState == 1 then
-                    local targetVelocity = targetHrp.AssemblyLinearVelocity or Vector3.new(0,0,0)
-                    local predictionFactor = 0.08
-                    local predictedPos = targetHrp.Position + (targetVelocity * predictionFactor)
-                    
-                    local strictLockPos = predictedPos
-                    
-                    if AttackModeOption == "Xoay vòng đối thủ" then
-                        OrbitAngle = OrbitAngle + (OrbitSpeed * dt)
-                        local offsetX = math.cos(OrbitAngle) * OrbitRadius
-                        local offsetZ = math.sin(OrbitAngle) * OrbitRadius
-                        strictLockPos = predictedPos + Vector3.new(offsetX, 0.5, offsetZ)
-                    else
-                        local lookVector = targetHrp.CFrame.LookVector
-                        strictLockPos = predictedPos - (lookVector * OrbitRadius) + Vector3.new(0, 0.5, 0)
-                    end
-                    
-                    hrp.CFrame = CFrame.new(strictLockPos, targetHrp.Position)
-                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-
-                    local currentDistToTarget = (hrp.Position - targetHrp.Position).Magnitude
-                    if currentDistToTarget <= 35 and (currentTime - LastAttackTick >= 0.005) then
-                        LastAttackTick = currentTime
-                        PerformAttack(targetChar)
-                    end
+                local targetVelocity = targetHrp.AssemblyLinearVelocity or Vector3.new(0,0,0)
+                local predictionFactor = 0.08
+                local predictedPos = targetHrp.Position + (targetVelocity * predictionFactor)
+                
+                local strictLockPos = predictedPos
+                
+                if AttackModeOption == "Xoay vòng đối thủ" then
+                    OrbitAngle = OrbitAngle + (OrbitSpeed * dt)
+                    local offsetX = math.cos(OrbitAngle) * OrbitRadius
+                    local offsetZ = math.sin(OrbitAngle) * OrbitRadius
+                    strictLockPos = predictedPos + Vector3.new(offsetX, 0.5, offsetZ)
                 else
-                    local escapePos = targetHrp.Position + Vector3.new(0, SafeHeight, 0)
-                    hrp.CFrame = CFrame.new(escapePos, hrp.Position + hrp.CFrame.LookVector)
-                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    local lookVector = targetHrp.CFrame.LookVector
+                    strictLockPos = predictedPos - (lookVector * OrbitRadius) + Vector3.new(0, 0.5, 0)
+                end
+                
+                hrp.CFrame = CFrame.new(strictLockPos, targetHrp.Position)
+                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+
+                local currentDistToTarget = (hrp.Position - targetHrp.Position).Magnitude
+                if currentDistToTarget <= 35 and (currentTime - LastAttackTick >= 0.005) then
+                    LastAttackTick = currentTime
+                    PerformAttack(targetChar)
                 end
             else
                 CurrentPersistentTarget = nil
